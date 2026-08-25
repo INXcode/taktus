@@ -1,0 +1,253 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Kein Job braucht Schreibrechte. Wo doch, wird das im Job selbst gesetzt.
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Muss zur lokal eingesetzten Version passen, damit CI und Arbeitsplatz
+  # dieselben Migrationen und pgTAP-Ergebnisse liefern.
+  SUPABASE_CLI_VERSION: 2.84.2
+
+jobs:
+  qualitaet:
+    name: Lint, Typen, Tests
+    # Actions-Minuten zaehlen nur auf privaten Repositories -- oeffentlich sind
+    # sie unbegrenzt. Auf einem privaten Klon laeuft dieser Job deshalb nicht;
+    # dort ist `pnpm verify` die Pruefung, und die kostet nichts.
+    if: ${{ !github.event.repository.private }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Vor dem Uebersetzungslauf, nicht danach: Ein zu hoher `@types/node`
+      # laesst `typecheck` gerade GRUEN durchlaufen -- das ist der Fehler.
+      # Die Meldung soll deshalb nicht hinter einem gruenen Haken stehen.
+      - run: pnpm node:check
+
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+
+  lizenzen:
+    name: Lizenzkompatibilitaet
+    # Actions-Minuten zaehlen nur auf privaten Repositories -- oeffentlich sind
+    # sie unbegrenzt. Auf einem privaten Klon laeuft dieser Job deshalb nicht;
+    # dort ist `pnpm verify` die Pruefung, und die kostet nichts.
+    if: ${{ !github.event.repository.private }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Prueft die Produktivabhaengigkeiten gegen license-policy.json und
+      # bricht bei unzulaessiger ODER unklarer Angabe ab. Die Regel steht in
+      # CONTRIBUTING.md, Abschnitt „Abhaengigkeiten".
+      - run: pnpm licenses:check
+
+  datenbank:
+    name: Migrationen und RLS-Tests
+    # Actions-Minuten zaehlen nur auf privaten Repositories -- oeffentlich sind
+    # sie unbegrenzt. Auf einem privaten Klon laeuft dieser Job deshalb nicht;
+    # dort ist `pnpm verify` die Pruefung, und die kostet nichts.
+    if: ${{ !github.event.repository.private }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+
+      # Die abgeschalteten Dienste stehen in supabase/config.toml; der Runner
+      # startet damit nur, was gebraucht wird.
+      - name: Lokalen Stack starten
+        run: supabase start --workdir .
+
+      - name: Schema-Pruefung
+        run: supabase db lint --workdir . --level warning --fail-on warning
+
+      # Der eigentliche Kern: RLS ohne Test ist eine Behauptung.
+      - name: pgTAP
+        run: supabase test db --workdir .
+
+      # Nicht nachgezogene Typen fuehren erfahrungsgemaess zu any-Umgehungen im
+      # Code. Der Job bricht deshalb bei jeder Abweichung ab.
+      - name: Datenbanktypen sind aktuell
+        run: |
+          pnpm db:types
+          git diff --exit-code src/types/database.ts
+
+  # Die Suite prueft die vier Waechterstufen im Zusammenspiel -- Sitzung,
+  # Rollen, Mandantentrennung, Anmeldemeldung, Paragraph-13-Fusszeile. Was
+  # sich in einem Unit-Test pruefen laesst, steht dort; hierher gehoert nur,
+  # was erst zwischen Browser, Proxy, Server Action und Datenbank sichtbar
+  # wird.
+  #
+  # Der Job braucht denselben Stack wie die pgTAP-Tests, deshalb startet er
+  # ihn selbst statt auf einen anderen Job zu warten: Ein `needs` haette die
+  # Laufzeit verdoppelt, ohne dass etwas geteilt wuerde.
+  e2e:
+    name: Oberflaeche im Browser
+    # Actions-Minuten zaehlen nur auf privaten Repositories -- oeffentlich sind
+    # sie unbegrenzt. Auf einem privaten Klon laeuft dieser Job deshalb nicht;
+    # dort ist `pnpm verify` die Pruefung, und die kostet nichts.
+    if: ${{ !github.event.repository.private }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+
+      - name: Lokalen Stack starten
+        run: supabase start --workdir .
+
+      # Chromium fuer die Suite, WebKit fuer eine einzige Stichprobe.
+      #
+      # Die geprueften Entscheidungen fallen auf dem Server und kommen in jedem
+      # Browser gleich heraus -- fuer die fuenf Risiken der Suite gilt das
+      # unveraendert. Es gibt aber eine Fehlerklasse daneben: eine Kopfzeile,
+      # die einen Browser aussperrt. `upgrade-insecure-requests` hat in WebKit
+      # jede Unteranfrage auf `https` angehoben und die Anmeldemaske
+      # ungestaltet ausgeliefert, waehrend Chromium nichts merkte.
+      #
+      # Deshalb der zweite Browser -- aber nur fuer `@stichprobe`, nicht fuer
+      # die ganze Suite (playwright.config.ts).
+      - name: Browser laden
+        run: pnpm exec playwright install --with-deps chromium webkit
+
+      # Die Schluessel des lokalen Stacks stehen fest -- `supabase start`
+      # gibt sie aus, und sie sind fuer jede lokale Instanz dieselben. Sie
+      # sind keine Geheimnisse: Sie gelten nur gegen diesen Wegwerf-Stack.
+      - name: Adressen und Schluessel uebernehmen
+        run: |
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=$(supabase status --workdir . -o json | jq -r .API_URL)"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$(supabase status --workdir . -o json | jq -r .ANON_KEY)"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$(supabase status --workdir . -o json | jq -r .SERVICE_ROLE_KEY)"
+            echo "NEXT_PUBLIC_SITE_URL=http://localhost:3100"
+          } >> "$GITHUB_ENV"
+
+      - name: Playwright
+        run: pnpm test:e2e
+
+      # Nur im Fehlerfall, und nur sieben Tage: Die Spuren enthalten
+      # Bildschirmaufnahmen der Anwendung samt Seed-Daten. Die sind
+      # synthetisch -- ein unbefristeter Anhang waere trotzdem
+      # Datensammlung ohne Zweck.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        if: failure()
+        with:
+          name: playwright-spuren
+          path: test-results/
+          retention-days: 7
+
+  build:
+    name: Build und Bundle-Pruefung
+    # Actions-Minuten zaehlen nur auf privaten Repositories -- oeffentlich sind
+    # sie unbegrenzt. Auf einem privaten Klon laeuft dieser Job deshalb nicht;
+    # dort ist `pnpm verify` die Pruefung, und die kostet nichts.
+    if: ${{ !github.event.repository.private }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+        env:
+          GIT_SHA: ${{ github.sha }}
+
+      # Prueft das ERGEBNIS, nicht die Absicht: Was tatsaechlich im Browser
+      # landet. docs/security.md, Kapitel A.
+      - run: pnpm bundle:check
+
+      # Startet das Standalone-Ergebnis, also genau das Artefakt, das im
+      # Container laeuft. Ohne diesen Schritt prueft die CI den Betriebsstand
+      # nirgends: `pnpm build` meldet Erfolg, `bundle:check` liest
+      # `.next/static`, und Playwright laeuft gegen `pnpm dev` mit
+      # vollstaendigen node_modules. Ein unvollstaendig getractes Ergebnis
+      # faellt damit erst im Betrieb auf -- am 20.08.2026 fuer knapp vier Tage.
+      - run: pnpm standalone:check
+
+  oeffentlicher_teil:
+    name: Trennung intern/oeffentlich
+    # Actions-Minuten zaehlen nur auf privaten Repositories -- oeffentlich sind
+    # sie unbegrenzt. Auf einem privaten Klon laeuft dieser Job deshalb nicht;
+    # dort ist `pnpm verify` die Pruefung, und die kostet nichts.
+    if: ${{ !github.event.repository.private }}
+    runs-on: ubuntu-latest
+    steps:
+      # Die vollstaendige Historie wird nicht gebraucht -- geprueft wird der
+      # Arbeitsstand, nicht was einmal dastand.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .nvmrc
+
+      # Aufruf ueber `node`, nicht ueber `pnpm`: Die Pruefung braucht keine
+      # Abhaengigkeiten, dieser Job richtet deshalb kein pnpm ein -- und dann
+      # ist auch `pnpm <script>` nicht verfuegbar. Der erste Anlauf ist genau
+      # daran gescheitert (`pnpm: command not found`, Exit 127).
+      #
+      # Prueft, dass keine oeffentliche Datei auf ein internes Dokument
+      # verweist und keine gesperrte Angabe darin steht. Ein Verweis verraet
+      # Existenz und Kapitelstruktur, auch wenn das Dokument selbst nie
+      # mitgeht.
+      #
+      # Ohne `--streng`: Unersetzte Platzhalter werden gemeldet, brechen aber
+      # nicht ab. Sie sind offene Aufgaben, keine Fehler im Zweig -- der
+      # strenge Lauf gehoert an das Tor zur Veroeffentlichung.
+      - run: node scripts/check-public-export.mjs
+
+  lizenzhinweise:
+    name: REUSE-Konformitaet
+    # Actions-Minuten zaehlen nur auf privaten Repositories -- oeffentlich sind
+    # sie unbegrenzt. Auf einem privaten Klon laeuft dieser Job deshalb nicht;
+    # dort ist `pnpm verify` die Pruefung, und die kostet nichts.
+    if: ${{ !github.event.repository.private }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: fsfe/reuse-action@676e2d560c9a403aa252096d99fcab3e1132b0f5 # v6

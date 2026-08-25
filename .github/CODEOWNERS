@@ -1,0 +1,42 @@
+# Standard: alles.
+* @INXcode
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Dateien, bei denen ein Fehler unmittelbar die Mandantentrennung oder den
+# Datenschutz betrifft. Die Eintragung ist heute redundant (Ein-Personen-
+# Projekt), wirkt aber ab dem ersten fremden Beitrag — und dann ist es zu spät,
+# sie noch anzulegen.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Row Level Security ist die eigentliche Sicherheitsgrenze der Anwendung.
+/supabase/migrations/          @INXcode
+/supabase/tests/               @INXcode
+/supabase/config.toml          @INXcode
+
+# Der Service-Role-Schlüssel umgeht sämtliche Policies.
+/src/lib/supabase/admin.ts     @INXcode
+/src/lib/auth/                 @INXcode
+
+# Die Prüfkette selbst. Wer sie abschwächt, schwächt alles darunter.
+/.github/workflows/            @INXcode
+/.semgrep/                     @INXcode
+/scripts/                      @INXcode
+/.gitleaks.toml                @INXcode
+/license-policy.json           @INXcode
+/license-exceptions.json       @INXcode
+
+# Lizenz und Beitragsbedingungen — Grundlage der kommerziellen
+# Doppellizenzierung.
+/LICENSE                       @INXcode
+/CLA.md                        @INXcode
+/CONTRIBUTING.md               @INXcode
+/REUSE.toml                    @INXcode
+
+# Zustimmungsbestand und die Politik dahinter. Wer hier schreiben darf,
+# entscheidet, wessen Beitrag ohne Zustimmung durchgeht -- die Allowlist ist
+# der empfindliche Teil, nicht die Signaturliste.
+/.github/cla-signatures.json   @INXcode
+/scripts/cla-signatures.mjs    @INXcode
+
+# Datenschutznachweise.
+/docs/                         @INXcode

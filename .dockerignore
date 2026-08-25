@@ -1,0 +1,49 @@
+# Was nicht in den Build-Kontext gehoert.
+#
+# Der wichtigste Eintrag ist `.env.*`: `COPY . .` in der Builder-Stufe wuerde
+# sonst `.env.local` mit den lokalen Schluesseln ins Abbild uebernehmen -- und
+# ein Abbild wandert weiter als ein Arbeitsverzeichnis. Die Vorlage bleibt
+# ausgenommen, sie enthaelt ausschliesslich Platzhalter.
+
+node_modules
+.next
+.git
+.gitignore
+.githooks
+.husky
+
+# Geheimnisse
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Baureste und Werkzeugausgaben
+*.tsbuildinfo
+coverage
+test-results
+playwright-report
+.playwright-mcp
+blob-report
+
+# Lokale Supabase-Instanz
+supabase/.temp
+supabase/.branches
+
+# Editor und System
+.vscode
+.idea
+.DS_Store
+*.swp
+
+# Dokumentation und Entwicklungsanweisungen.
+# Sie werden zur Laufzeit nicht gelesen. Der Quelltext bleibt ueber das
+# Repository zugaenglich -- die AGPL verlangt das Angebot des Quelltextes,
+# nicht seine Mitlieferung im Abbild (die Fusszeile verlinkt darauf).
+#
+# Bewusst ein Muster statt einer Aufzaehlung: Eine Liste einzelner Dateinamen
+# uebersieht jede neue Datei still. Keine Markdown-Datei wird zur Laufzeit
+# gelesen -- weder vom Build noch von der Anwendung.
+docs
+*.md

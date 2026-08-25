@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "$hinweis": [
+    "Projektbezogene Leitplanken fuer Claude Code. Gilt fuer jeden, der an",
+    "Taktus arbeitet.",
+    "",
+    "Die Sperren unter `deny` sind nicht kosmetisch: `supabase stop --all` und",
+    "`docker volume prune` wirken maschinenweit und nicht projektbezogen. Wer",
+    "ein zweites Supabase-Projekt auf demselben Rechner haelt, verliert damit",
+    "dessen Daten. Begruendung in docs/betrieb.md.",
+    "",
+    "Maschinenspezifische Sperren -- etwa auf ein konkretes anderes Projekt --",
+    "gehoeren in .claude/settings.local.json, nicht hierher. Diese Datei wird",
+    "veroeffentlicht."
+  ],
+  "permissions": {
+    "deny": [
+      "Bash(supabase stop --all:*)",
+      "Bash(supabase stop:*--no-backup:*)",
+      "Bash(docker system prune:*)",
+      "Bash(docker volume prune:*)",
+      "Bash(docker volume rm:*)",
+      "Bash(docker network prune:*)",
+      "Read(./.env)",
+      "Read(./.env.local)",
+      "Read(./.env.*.local)"
+    ],
+    "ask": [
+      "Bash(supabase db reset:*)",
+      "Bash(supabase stop:*)",
+      "Bash(docker stop:*)",
+      "Bash(docker rm:*)",
+      "Bash(docker restart:*)",
+      "Bash(git push:*)",
+      "Bash(gh repo edit:*)",
+      "Bash(gh repo delete:*)"
+    ],
+    "allow": [
+      "Bash(pnpm db:start)",
+      "Bash(pnpm db:test)",
+      "Bash(pnpm db:types)",
+      "Bash(pnpm db:lint)",
+      "Bash(pnpm lint)",
+      "Bash(pnpm typecheck)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm build)",
+      "Bash(pnpm licenses:check)",
+      "Bash(docker ps:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)"
+    ]
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "$hinweis": [
+    "Lizenzpolitik für Taktus Kontor. Ausgewertet von scripts/check-licenses.mjs.",
+    "",
+    "WICHTIG: Diese Liste gilt NUR für dieses Projekt. Taktus steht selbst unter",
+    "AGPL-3.0 — Copyleft ist hier deshalb zulässig. In proprietärer",
+    "Individualsoftware wäre dieselbe Liste falsch: dort brechen GPL, AGPL und",
+    "LGPL zu Recht den Build. Die Regel lautet nicht 'Copyleft raus', sondern",
+    "ist lizenzgenau.",
+    "",
+    "Der Fallstrick steht bei GPL-2.0: 'or-later' darf auf GPLv3 hochgezogen",
+    "werden und ist damit AGPL-3.0-verträglich, 'only' nicht.",
+    "",
+    "Vollständige Herleitung: CONTRIBUTING.md, Abschnitt „Abhängigkeiten\"."
+  ],
+
+  "allow": [
+    "0BSD",
+    "AGPL-3.0-only",
+    "AGPL-3.0-or-later",
+    "Apache-2.0",
+    "Artistic-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "BlueOak-1.0.0",
+    "CC0-1.0",
+    "GPL-2.0-or-later",
+    "GPL-3.0-only",
+    "GPL-3.0-or-later",
+    "ISC",
+    "LGPL-2.1-or-later",
+    "LGPL-3.0-only",
+    "LGPL-3.0-or-later",
+    "MIT",
+    "MIT-0",
+    "MPL-2.0",
+    "Python-2.0",
+    "Unlicense",
+    "Zlib"
+  ],
+
+  "allowMitBegruendung": {
+    "CC-BY-4.0": "Keine Softwarelizenz, sondern eine Inhaltslizenz. Trifft in Node-Projekten praktisch immer caniuse-lite — einen Datensatz zur Browserunterstützung, keinen Programmcode. Creative Commons erklärt CC BY 4.0 ausdrücklich für einseitig GPLv3-verträglich; die Namensnennung erfolgt über das SBOM und die Lizenzseite der Anwendung.",
+    "LGPL-2.1-or-later": "Über die Upgrade-Klausel auf LGPL-3.0 und damit auf AGPL-3.0 hochziehbar.",
+    "LGPL-3.0-or-later": "Ausdrücklich AGPL-3.0-verträglich. Betrifft hier die vorkompilierten libvips-Bindings von sharp — dynamisch gebunden, nicht statisch eingebettet."
+  },
+
+  "deny": [
+    "AGPL-3.0",
+    "BUSL-1.1",
+    "CC-BY-NC-4.0",
+    "CC-BY-NC-SA-4.0",
+    "CC-BY-SA-4.0",
+    "Commons-Clause",
+    "Elastic-2.0",
+    "GPL-1.0-only",
+    "GPL-1.0-or-later",
+    "GPL-2.0",
+    "GPL-2.0-only",
+    "GPL-3.0",
+    "JSON",
+    "LGPL-2.0-only",
+    "LGPL-2.1",
+    "LGPL-2.1-only",
+    "LGPL-3.0",
+    "SSPL-1.0",
+    "UNLICENSED"
+  ],
+
+  "denyBegruendung": {
+    "GPL-2.0-only": "Nicht AGPL-3.0-kompatibel. Der Fallstrick der ganzen Liste: Copyleft, aber unvereinbar.",
+    "GPL-2.0": "Veralteter Bezeichner ohne Angabe, ob 'only' oder 'or-later' gemeint ist. Im Zweifel restriktiv — die Freigabe erfolgt dann einmalig über license-exceptions.json.",
+    "GPL-3.0": "Veralteter Bezeichner, siehe GPL-2.0. Die eindeutigen Varianten GPL-3.0-only und GPL-3.0-or-later stehen auf der Positivliste.",
+    "AGPL-3.0": "Veralteter Bezeichner, siehe GPL-2.0.",
+    "LGPL-2.1-only": "Die Upgrade-Klausel ist hier nicht ohne Weiteres anwendbar. Ein Mensch entscheidet.",
+    "CC-BY-SA-4.0": "Share-Alike auf Inhalten mit eigenen Weitergabebedingungen — nicht ohne Prüfung mit AGPL-3.0 vereinbar.",
+    "JSON": "Enthält die Klausel 'The Software shall be used for Good, not Evil'. Nicht durchsetzbar bestimmt und damit keine freie Lizenz; die FSF stuft sie als unfrei ein.",
+    "SSPL-1.0": "Quelloffen, aber keine freie Lizenz. Bedingungen gehen über AGPL-3.0 hinaus.",
+    "UNLICENSED": "Ausdrückliche Kennzeichnung als nicht lizenziert."
+  }
+}

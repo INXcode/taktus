@@ -1,0 +1,52 @@
+# Kein Monorepo. Diese Datei existiert allein, um Build-Skripte von
+# Abhaengigkeiten explizit zu bewerten, statt sie stillschweigend laufen zu
+# lassen -- pnpm fuehrt sie seit Version 10 nur nach ausdruecklicher Freigabe
+# aus. Genau dieses Verhalten ist der Grund fuer die Wahl von pnpm
+# (docs/security.md, Kapitel D: Installationsskripte sind ein Einfallstor).
+ignoredBuiltDependencies:
+  # Native Bindings des Resolvers, den eslint-import-resolver-typescript
+  # verwendet. Der Postinstall-Schritt laedt eine vorkompilierte Binaerdatei;
+  # ohne ihn faellt das Paket auf die WebAssembly-Variante zurueck. Fuer die
+  # Projektgroesse ist der Unterschied nicht messbar, der Verzicht auf einen
+  # Netzwerkzugriff waehrend `pnpm install` dagegen ein echter Gewinn.
+  - unrs-resolver
+
+# `sharp` bleibt draussen -- die einzige Copyleft-Abhaengigkeit im
+# Produktionsbaum kam ueber dieses Paket herein.
+#
+# Next zieht `sharp` als `optionalDependency` fuer die Bildoptimierung. Das
+# Paket selbst steht unter Apache-2.0, seine vorkompilierten libvips-Bindings
+# (`@img/sharp-libvips-*`) unter LGPL-3.0-or-later. Unter AGPL-3.0 ist das
+# unproblematisch -- Taktus steht selbst darunter, und `license-policy.json`
+# laesst LGPL ausdruecklich zu.
+#
+# Fuer eine proprietaere Weiterverwendung -- die `README.md` bietet eine
+# abweichende kommerzielle Lizenzierung auf Anfrage an -- waere es dagegen eine
+# Auflage: dynamische Bindung belegen, Lizenztext beilegen, Austauschbarkeit
+# dokumentieren, und das bei jedem Release erneut.
+#
+# Diese Anwendung nutzt keine Bildoptimierung: kein `next/image` in `src/`,
+# kein `images`-Abschnitt in `next.config.ts`. Die Auflage waere also fuer eine
+# Faehigkeit zu tragen, die niemand aufruft.
+#
+# `images: { unoptimized: true }` genuegt dafuer NICHT. Der Schalter hindert
+# Next daran, `sharp` zu benutzen -- er entfernt es nicht aus dem
+# Abhaengigkeitsbaum. Fuer die Lizenzfrage zaehlt, was ausgeliefert wird:
+# `node_modules` im Containerabbild, nicht die Laufzeitkonfiguration.
+#
+# Wirkung, gemessen: 76 -> 68 Produktivpakete, 92 -> 0 `@img/`-Eintraege im
+# Lockfile, 18 MB weniger in `node_modules`. Build, Tests, Lizenzpruefung und
+# der Standalone-Start bleiben gruen.
+#
+# Wer spaeter Bildoptimierung braucht, entfernt die beiden Zeilen unten und
+# traegt die LGPL-Auflagen dann bewusst: die Bindings dynamisch geladen lassen
+# statt in ein Bundle einzubetten, den Lizenztext beilegen, Bibliothek, Lizenz
+# und Bezugsquelle nennen. Aenderungen an der Bibliothek selbst waeren
+# offenzulegen -- es gibt keine.
+#
+# Der Hebel haengt daran, dass `sharp` bei Next eine `optionalDependency`
+# bleibt. Wird sie hart, wirkt diese Angabe lautlos nicht mehr. Beim naechsten
+# Next-Hauptversionssprung gegenpruefen: `grep -c "@img/" pnpm-lock.yaml` muss
+# `0` ergeben.
+ignoredOptionalDependencies:
+  - sharp

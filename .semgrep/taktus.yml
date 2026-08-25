@@ -1,0 +1,177 @@
+# Projektspezifische Semgrep-Regeln.
+#
+# Die fertigen Regelsätze (p/typescript, p/react, p/owasp-top-ten, p/secrets)
+# laufen zusätzlich und decken die allgemeinen Muster ab. Was sie NICHT kennen,
+# sind die Regeln dieses Projekts -- und genau darin liegt der Wert dieser
+# Datei.
+#
+# docs/security.md, Kapitel 3: Kein generischer Scanner findet eine fachlich
+# falsche Zugriffsregel. Die Regeln unten codieren jeweils eine konkrete
+# Projektentscheidung, damit ihre Verletzung maschinell auffällt statt erst im
+# Review.
+
+rules:
+  # --- Zugriffskontrolle --------------------------------------------------
+
+  - id: taktus-admin-client-ausserhalb-erlaubter-orte
+    languages: [typescript]
+    severity: ERROR
+    message: >-
+      createAdminClient() umgeht sämtliche RLS-Policies und damit die
+      Mandantentrennung. Der Aufruf ist nur in src/lib/ und src/actions/
+      zulässig, wo die Autorisierung nachweislich beim requireRole() der
+      aufrufenden Stelle liegt. Siehe docs/architektur.md.
+    paths:
+      include:
+        - "**/src/"
+      exclude:
+        - "**/src/lib/"
+        - "**/src/actions/"
+    pattern: createAdminClient(...)
+
+  - id: taktus-service-role-key-in-client-komponente
+    languages: [typescript]
+    severity: ERROR
+    message: >-
+      Der Service-Role-Schlüssel darf eine Client-Komponente nicht einmal
+      erwähnen. Gelangt er ins Bundle, ist er kompromittiert und muss ersetzt
+      werden -- Entfernen aus dem Quelltext genügt dann nicht.
+    patterns:
+      - pattern-inside: |
+          "use client";
+          ...
+      - pattern-either:
+          - pattern: process.env.SUPABASE_SERVICE_ROLE_KEY
+          - pattern: process.env["SUPABASE_SERVICE_ROLE_KEY"]
+
+  - id: taktus-server-action-ohne-rollenpruefung
+    languages: [typescript]
+    severity: WARNING
+    message: >-
+      Exportierte Server Action ohne erkennbaren requireRole()-Aufruf. Die
+      Rollenprüfung gehört als erste Anweisung in jede Action -- die Middleware
+      allein ist nie die Autorisierung (CVE-2025-29927-Klasse). Ist der Fall
+      wirklich öffentlich, gehört eine Begründung als Kommentar daneben.
+    paths:
+      include:
+        - "**/src/actions/"
+    patterns:
+      - pattern-inside: |
+          "use server";
+          ...
+      - pattern: |
+          export async function $NAME(...) { ... }
+      - pattern-not: |
+          export async function $NAME(...) {
+            ...
+            requireRole(...)
+            ...
+          }
+
+  # --- Datenschutz --------------------------------------------------------
+
+  - id: taktus-personenbezug-im-log
+    languages: [typescript]
+    severity: ERROR
+    message: >-
+      Möglicher Personenbezug in einer Protokollausgabe. docs/security.md,
+      Kapitel F führt "Protokollierung ohne Grenze" als eigenes Risiko: Das Log
+      wird dann selbst zum Datenschutzproblem. Technische Details serverseitig
+      protokollieren, personenbezogene Inhalte nicht.
+    patterns:
+      - pattern-either:
+          - pattern: console.log(..., $X, ...)
+          - pattern: console.error(..., $X, ...)
+          - pattern: console.warn(..., $X, ...)
+          - pattern: console.info(..., $X, ...)
+      - metavariable-regex:
+          metavariable: $X
+          regex: (?i).*(email|e_mail|passwort|password|token|api_?key|secret|vorname|nachname|display_?name|telefon|phone|adresse|address).*
+
+  - id: taktus-audit-log-mit-feldinhalten
+    languages: [typescript]
+    severity: ERROR
+    message: >-
+      Das Audit-Log speichert bewusst nur Feldnamen (changed_fields), niemals
+      Feldinhalte. Ein Protokoll mit alten und neuen Werten wäre eine zweite,
+      unbefristete Kopie personenbezogener Daten. Siehe docs/datenmodell.md.
+    patterns:
+      - pattern-inside: |
+          $CLIENT.from("audit_log").insert($OBJ)
+      - pattern-either:
+          - pattern: |
+              {..., old_value: ..., ...}
+          - pattern: |
+              {..., new_value: ..., ...}
+          - pattern: |
+              {..., payload: ..., ...}
+
+  # --- KI -----------------------------------------------------------------
+
+  - id: taktus-modellausgabe-ohne-schema
+    languages: [typescript]
+    severity: WARNING
+    message: >-
+      Modellausgabe ohne erkennbare Zod-Validierung. Das Schema ist der
+      Rückhalt gegen Halluzination UND gegen Prompt Injection: Wird die Kategorie
+      als Enum geprüft, kann eine manipulierte Antwort höchstens ein gültiger
+      Kategoriewert sein. Siehe docs/security.md, Kapitel G.
+    paths:
+      include:
+        - "**/src/lib/ai/"
+    patterns:
+      - pattern: |
+          const $R = await $CLIENT.messages.create(...);
+          ...
+      - pattern-not: |
+          const $R = await $CLIENT.messages.create(...);
+          ...
+          $SCHEMA.safeParse(...)
+      - pattern-not: |
+          const $R = await $CLIENT.messages.create(...);
+          ...
+          $SCHEMA.parse(...)
+
+  # --- Allgemeine Härtung -------------------------------------------------
+
+  - id: taktus-dangerously-set-inner-html
+    languages: [typescript]
+    severity: ERROR
+    message: >-
+      React maskiert standardmäßig; dangerouslySetInnerHTML hebelt genau das
+      aus und ist der einzige realistische XSS-Weg in dieser Anwendung
+      (docs/security.md, Kapitel C). Ticket- und Kommentartexte sind
+      Nutzereingaben.
+    # Als freistehendes Muster erkennt Semgrep das JSX-Attribut nicht -- es
+    # braucht das umgebende Element. Beide Schreibweisen, weil ein Element mit
+    # gesetztem innerHTML zwar selbstschliessend sein sollte, es aber nicht
+    # sein muss.
+    pattern-either:
+      - pattern: <$EL dangerouslySetInnerHTML={...} />
+      - pattern: <$EL dangerouslySetInnerHTML={...}>...</$EL>
+
+  - id: taktus-rls-policy-ohne-initplan
+    languages: [generic]
+    severity: WARNING
+    paths:
+      include:
+        - "**/supabase/migrations/*.sql"
+    message: >-
+      auth.uid() ohne umschließendes (SELECT ...). Postgres wertet den Aufruf
+      dann pro Zeile aus statt einmal je Abfrage. Der Unterschied ist bei
+      größeren Tabellen dreistellig. Richtig: (SELECT auth.uid()) bzw.
+      (SELECT public.current_tenant_id()). Siehe CONTRIBUTING.md.
+    # Als regulärer Ausdruck statt als Semgrep-Muster, aus einem konkreten
+    # Grund: Der Generic-Modus kennt keine SQL-Kommentare. Die frühere Fassung
+    # (`pattern: auth.uid()` mit `pattern-not-inside`) meldete zuverlässig jede
+    # ERKLÄRUNG in den Migrationen, die auth.uid() erwähnt -- also genau die
+    # Kommentare, die vor dem Fehler warnen. Aufgefallen ist das erst im ersten
+    # CI-Lauf, nicht bei der lokalen Probe.
+    #
+    #   ^(?![^\n]*--)   Zeile enthält keinen Kommentarbeginn
+    #   (?<!SELECT )    unmittelbar davor steht nicht "SELECT "
+    #
+    # Der Rückblick ist mit sieben Zeichen fester Länge und damit in PCRE
+    # zulässig. Eine Codezeile mit angehängtem Kommentar wird übersprungen --
+    # in Migrationen dieses Projekts stehen Kommentare ohnehin über der Zeile.
+    pattern-regex: '(?m)^(?![^\n]*--)[^\n]*(?<!SELECT )auth\.uid\(\)'

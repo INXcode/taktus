@@ -1,0 +1,93 @@
+# gitleaks-Konfiguration für Taktus Kontor
+#
+# Zwei Einsatzorte:
+#   1. husky-Pre-Commit — verhindert, dass ein Geheimnis überhaupt in die
+#      Historie gelangt. Git löscht nichts; nachträgliches Bereinigen ist immer
+#      die schlechtere Lösung.
+#   2. CI-Workflow und der Historienscan vor dem Öffentlichmachen.
+#
+# Hintergrund: GitHub Push Protection steht auf privaten Repositories des
+# Free-Plans nicht zur Verfügung. Diese Konfiguration ist der Ersatz dafür —
+# siehe docs/veroeffentlichung.md.
+
+title = "Taktus Kontor"
+
+[extend]
+# Der mitgelieferte Regelsatz von gitleaks ist die Grundlage; darunter stehen
+# nur projektspezifische Ergänzungen.
+useDefault = true
+
+# --- Projektspezifische Regeln --------------------------------------------
+
+[[rules]]
+id = "supabase-service-role-key"
+description = "Supabase Service-Role-Key (JWT mit role=service_role)"
+# Ein Supabase-Schlüssel ist ein JWT; der Service-Role-Key ist der einzige, der
+# RLS vollständig umgeht. Er darf ausschließlich serverseitig existieren.
+regex = '''eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}'''
+keywords = ["eyj"]
+[rules.allowlist]
+regexTarget = "line"
+regexes = [
+  # Die von der Supabase-CLI erzeugten lokalen Demo-Schlüssel sind öffentlich
+  # bekannt, in jeder Supabase-Installation identisch und wertlos. Sie stehen in
+  # der Dokumentation, damit der Einstieg ohne Rückfrage gelingt.
+  '''supabase_demo''',
+  '''SUPABASE_DEMO_KEY''',
+]
+
+[[rules]]
+id = "supabase-db-url-with-password"
+description = "Postgres-Verbindungszeichenkette mit Passwort"
+# gitleaks nutzt Go/RE2. Lookarounds wie (?! sind dort nicht verfuegbar --
+# ein Ausdruck damit laesst gitleaks nicht fehlschlagen, sondern abstuerzen.
+# Ausnahmen gehoeren deshalb grundsaetzlich in die Allowlist, nicht in die
+# Regel.
+regex = '''postgres(?:ql)?://[^:\s]+:[^@\s]{3,}@'''
+keywords = ["postgres://", "postgresql://"]
+
+[[rules]]
+id = "anthropic-api-key"
+description = "Anthropic API-Schlüssel"
+regex = '''sk-ant-(?:api|admin)[A-Za-z0-9_-]{20,}'''
+keywords = ["sk-ant-"]
+
+# --- Globale Allowlist -----------------------------------------------------
+
+[allowlist]
+description = "Bekannte, bewusst unkritische Fundstellen"
+# Ohne diese Angabe prueft gitleaks die Ausdruecke gegen den erkannten
+# Geheimnis-Ausschnitt statt gegen die ganze Zeile -- die Platzhalter-Muster
+# unten wuerden dann nie greifen.
+regexTarget = "line"
+
+paths = [
+  # Beispieldateien enthalten ausschließlich Platzhalter. Genau das ist ihr
+  # Zweck — und der Grund, warum sie als einzige .env-Variante versioniert sind.
+  '''\.env\.example$''',
+  # Der Lizenztext enthält Zeichenketten, die Entropieregeln auslösen.
+  '''^LICENSE$''',
+  '''^pnpm-lock\.yaml$''',
+  # Der Regelsatz selbst enthält naturgemäß Muster, die wie Geheimnisse aussehen.
+  '''^\.gitleaks\.toml$''',
+  '''^\.semgrep/''',
+]
+
+regexes = [
+  # Platzhalter in Dokumentation und Beispieldateien.
+  #
+  # Bewusst eng gefasst. Ein frueherer Entwurf enthielt hier `example[-_]?`
+  # und `beispiel[-_]?` -- damit galt jede Zeile als unbedenklich, in der
+  # irgendwo `example.com` oder `db.example.invalid` vorkam. Die Regel gegen
+  # Postgres-Verbindungszeichenketten war dadurch vollstaendig wirkungslos,
+  # ohne dass es aufgefallen waere.
+  #
+  # Merksatz: Eine zu breite Allowlist schaltet Regeln still ab. Jedes Muster
+  # hier muss so eng sein, dass es ausschliesslich Platzhalter trifft.
+  '''(?i)(dein|your)-[a-z-]*(key|secret|token|passwort|password)''',
+  '''(?i)(changeme|placeholder|xxxxxxxx)''',
+  '''<[a-z][a-z0-9-]*>''',
+  # Der lokale Standard der Supabase-CLI. Dieses Passwort existiert nur im
+  # Container auf dem Entwicklungsrechner und ist in jeder Installation gleich.
+  '''postgres://postgres:postgres@''',
+]

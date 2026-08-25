@@ -1,0 +1,28 @@
+#!/usr/bin/env sh
+
+# Was die CI prüfte, bevor sie es nicht mehr tut.
+#
+# GitHub-Actions-Minuten zählen nur auf privaten Repositories -- öffentlich
+# sind sie unbegrenzt. Die Workflows laufen deshalb nur noch in der
+# öffentlichen Linie, und dort erst am Pull Request. Zwischen dem Commit hier
+# und diesem Zeitpunkt läge sonst keine Prüfung mehr.
+#
+# Rund 15 Sekunden. Playwright und der Build fehlen bewusst -- sie brauchen
+# Minuten, und ein Tor, das so lange aufhält, wird umgangen. Die laufen in der
+# CI des öffentlichen Repositories.
+#
+# Läuft der lokale Supabase-Stack nicht, überspringt `verify` die
+# Datenbankschritte und sagt es. Es bricht deshalb nicht ab: Ein Hook, der
+# ohne laufenden Stack jeden Push verhindert, wird mit --no-verify umgangen,
+# und dann prüft er gar nichts mehr.
+
+pnpm verify || {
+  echo ""
+  echo "  Push abgebrochen: pnpm verify hat etwas gefunden."
+  echo ""
+  echo "  Die CI holt das nicht mehr nach -- in dieser Ablage laufen die"
+  echo "  Workflows nicht. Was hier rot ist, fällt sonst erst im öffentlichen"
+  echo "  Pull Request auf, oder gar nicht."
+  echo ""
+  exit 1
+}

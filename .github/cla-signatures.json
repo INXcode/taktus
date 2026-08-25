@@ -1,0 +1,33 @@
+{
+  "$hinweis": [
+    "Dauerhaft vermerkte Zustimmungen zum Contributor License Agreement (CLA.md).",
+    "",
+    "Diese Datei wird NICHT von einem Bot geschrieben. Sie wird von der",
+    "Verwaltung ueber einen gewoehnlichen Pull Request gepflegt und liegt damit",
+    "unter Branch Protection und CODEOWNERS -- niemand traegt sich selbst ein.",
+    "",
+    "Ein Eintrag hier ist eine Bequemlichkeit, kein Erfordernis: Wer keinen",
+    "Eintrag hat, stimmt im Pull Request per Kommentar zu. Beide Wege sind",
+    "gleichwertig, und der Kommentar bleibt in jedem Fall der Nachweis --",
+    "er traegt Konto und Zeitstempel und steht dauerhaft am Vorgang.",
+    "",
+    "Der Wortlaut des Zustimmungssatzes steht in scripts/cla-signatures.mjs.",
+    "",
+    "`cla_version` wird heraufgesetzt, wenn sich CLA.md INHALTLICH aendert.",
+    "Dann verlieren alle Eintraege aelterer Fassungen ihre Wirkung und die",
+    "Zustimmung ist erneut einzuholen. Eine Korrektur an Rechtschreibung oder",
+    "Anschrift ist keine inhaltliche Aenderung.",
+    "",
+    "`allowlist` fuehrt Konten, die nicht zustimmen koennen oder muessen.",
+    "Bots koennen nicht unterschreiben; ohne diesen Weg blockierte der erste",
+    "Aktualisierungs-Pull-Request sofort alles. Und der Rechteinhaber raeumt",
+    "sich selbst keine Rechte ein. dependabot, renovate und github-actions",
+    "stehen bereits fest eingebaut in scripts/cla-signatures.mjs."
+  ],
+
+  "cla_version": "1.0",
+
+  "allowlist": ["INXcode"],
+
+  "signatures": []
+}

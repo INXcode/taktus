@@ -1,0 +1,43 @@
+node_modules
+.next
+out
+build
+coverage
+pnpm-lock.yaml
+LICENSE
+CODE_OF_CONDUCT.md
+
+# Generiert durch `pnpm db:types`.
+src/types/database.ts
+
+# Absichtlich fehlerhafter Code als Nachweis für die Semgrep-Regeln. Er wird
+# nie ausgeführt und soll genau so bleiben, wie er geschrieben wurde.
+.semgrep/probe
+
+# Von der Supabase-CLI verwaltet.
+supabase/.branches
+supabase/.temp
+
+# SQL formatiert Prettier nicht sinnvoll; Migrationen bleiben so, wie sie
+# geschrieben wurden.
+*.sql
+
+# Die gelieferten Bildschirmentwürfe. Referenzmaterial, keine Quelle -- sie
+# bleiben byteweise so, wie sie aus dem Entwurfswerkzeug kommen, damit sie
+# sich gegen das Original prüfen lassen.
+#
+# Prettier hat die Datei einmal umformatiert (1979 auf 20484 Zeilen). Inhaltlich
+# blieb sie heil, aber der Entwurf lebt von Inline-Elementen in Flex-Reihen --
+# und dort ist Leerraum darstellungsrelevant. Eine Referenz, die anders
+# aussieht als das, was abgenommen wurde, ist keine.
+docs/design/
+
+# Der Vertragstext bleibt im Wortlaut, in dem er uebernommen wurde. Prettier
+# bricht Zeilen um und normalisiert Aufzaehlungszeichen -- an einem Vertrag ist
+# das keine Formatierung, sondern eine Aenderung. Wer die Fassung gegen die
+# Vorlage der FSFE pruefen will, muss das Zeile fuer Zeile koennen.
+#
+# Das ist kein theoretischer Vorbehalt: Prettier hat den Text an anderer Stelle
+# bereits einmal umgeschrieben (Aufzaehlungszeichen von `*` auf `-`). Seither
+# gibt es ihn nur noch einmal, naemlich hier.
+CLA.md

@@ -1,0 +1,66 @@
+# Abhängigkeiten
+node_modules/
+.pnpm-store/
+
+# Next.js
+.next/
+out/
+build/
+next-env.d.ts
+
+# TypeScript-Zwischenstand aus `incremental: true`
+*.tsbuildinfo
+
+# Umgebungsvariablen — niemals mit echten Werten committen.
+# Die Allowlist darunter ist die einzige Ausnahme.
+.env
+.env.*
+!.env.example
+
+# Supabase (lokaler Stack)
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+supabase/.env.local
+
+# Testartefakte
+coverage/
+test-results/
+playwright-report/
+blob-report/
+.playwright-mcp/
+
+# Datenschutz-Sicherheitsnetz: Datenbankauszüge und Sicherungen dürfen das
+# Repository unter keinen Umständen erreichen, auch nicht versehentlich.
+*.bak
+*.dump
+*.bacpac
+*.sql.gz
+
+# Werkzeuge und Betriebssystem
+.DS_Store
+*.pem
+.vercel
+.turbo
+.idea/
+.vscode/
+!.vscode/extensions.json
+
+# Claude Code: lokale Sitzungsdaten. `.claude/settings.json` ist bewusst
+# versioniert (enthält die Schutzregeln gegen Fremdprojekt-Zugriffe),
+# `settings.local.json` ist maschinenspezifisch.
+.claude/settings.local.json
+.claude/*.local.json
+
+# Die gelieferten Bildschirmentwuerfe.
+#
+# Internes Uebergabedokument, kein Betreiberwissen: Es traegt dieselbe
+# Positionierungsbegruendung und denselben geschaeftlichen Hintergrund wie
+# das interne Uebergabedokument und faellt damit unter dieselbe Regel.
+# Nicht versioniert, damit es beim Umschalten auf oeffentlich gar
+# nicht erst mitgehen kann -- Git loescht nichts, und eine einmal
+# eingecheckte Datei bleibt in der Historie.
+#
+# Bezugsquelle bleibt das Design-Projekt; die Datei liegt lokal unter
+# docs/design/ und wird von Prettier nicht angefasst (.prettierignore).
+docs/design/

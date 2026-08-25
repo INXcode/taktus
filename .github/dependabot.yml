@@ -1,0 +1,152 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    # Wartezeit vor der Uebernahme neuer Versionen.
+    #
+    # Der haeufigste Verlauf eines Lieferkettenangriffs: Ein uebernommenes
+    # Maintainer-Konto veroeffentlicht eine schadhafte Version, die innerhalb
+    # weniger Tage auffaellt und zurueckgezogen wird. Wer sofort aktualisiert,
+    # faengt genau dieses Fenster ab. Sieben Tage ist der Wert, den Semgreps
+    # Regelsatz als Mindestmass ansetzt.
+    #
+    # Gilt NICHT fuer Sicherheitsaktualisierungen -- die erzeugt Dependabot
+    # unabhaengig davon und ohne Verzoegerung.
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:00"
+      timezone: Europe/Berlin
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    # Gebuendelt, damit nicht zwanzig einzelne Pull Requests entstehen, die
+    # niemand durchsieht. Sicherheitsrelevante Aktualisierungen bleiben davon
+    # unberuehrt -- Dependabot erzeugt sie unabhaengig vom Zeitplan.
+    groups:
+      next:
+        patterns: ["next", "eslint-config-next", "@next/*"]
+      react:
+        patterns: ["react", "react-dom", "@types/react", "@types/react-dom"]
+      supabase:
+        patterns: ["@supabase/*"]
+      werkzeuge:
+        dependency-type: development
+        patterns: ["*"]
+        # @types/node gehoert nicht in die Buendelung.
+        #
+        # ACHTUNG: Diese Zeile allein genuegt NICHT. Sie steht hier, weil die
+        # Gruppierung sachlich falsch waere -- nicht, weil sie den Sprung
+        # verhindert. Der Beleg steht unten bei `ignore`.
+        exclude-patterns: ["@types/node"]
+    ignore:
+      # Die beiden Obergrenzen sind erprobt, nicht geraten -- Begruendung in
+      # package.json unter "//versionshinweise". Ein automatischer Major-Sprung
+      # wuerde hier das typisierte Linting bzw. den gesamten ESLint-Lauf
+      # brechen. Beide Grenzen gehoeren bei jedem Next.js-Major erneut geprueft.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+      - dependency-name: eslint
+        update-types: [version-update:semver-major]
+      # @types/node folgt der Node-Hauptversion, nicht dem neuesten
+      # Veroeffentlichungsstand. Die Laufzeit ist ueber .nvmrc auf 24
+      # festgelegt; Typen aus 26 wuerden Schnittstellen beschreiben, die es
+      # zur Laufzeit nicht gibt -- ein Uebersetzungslauf bliebe gruen, und der
+      # Fehler traete erst im Betrieb auf. Wird Node angehoben, gehoert dieser
+      # Eintrag im selben Zug angepasst (siehe docs/architektur.md).
+      #
+      # ─────────────────────────────────────────────────────────────────────
+      # KEINE REGEL AUS DIESER DATEI GREIFT HIER -- nachgestellt in vier
+      # Anlaeufen, mit `update-types`, mit `exclude-patterns`, mit `versions`
+      # und mit allen dreien zusammen. Dependabot hob `@types/node` jedes Mal
+      # ueber die Hauptversion, auch innerhalb der Gruppe `werkzeuge`.
+      #
+      # Ein `@dependabot ignore @types/node major version` als Kommentar am
+      # Vorgang sieht wie die Loesung aus und ist keine. Die Antwort darauf
+      # lautet woertlich:
+      #
+      #   "OK, I won't notify you about version 26.x.x of @types/node again"
+      #
+      # Gesperrt ist damit genau EIN Hauptzweig, nicht die Bedingung -- der
+      # naechste Major kommt durch. Eine Sperre in Dependabots Zustand ist
+      # ausserdem unsichtbar: Sie steht nicht im Repository und faellt mit ihm
+      # nicht auf. Dependabot legt sie auf Nachfrage selbst offen:
+      #
+      #   @dependabot show @types/node ignore conditions
+      #   | @types/node | [>= 26.a, < 27] |
+      #
+      # Das ist die einzige Bedingung, die er kennt -- die aus dem Kommentar.
+      # Weder `update-types` noch `exclude-patterns` noch `versions` aus dieser
+      # Datei taucht darin auf. Fuer diese Abhaengigkeit kommt hier nichts an,
+      # und keine fuenfte Schreibweise wird das aendern.
+      #
+      # > [!important] Verlassen kann man sich auf `pnpm node:check`
+      # > Die Absicherung liegt in der CI, nicht hier:
+      # > `scripts/check-node-major.mjs` vergleicht `.nvmrc`, `engines.node`
+      # > und `@types/node` und bricht bei Abweichung ab. Sie haengt nicht
+      # > davon ab, ob ein fremder Dienst seine Konfiguration beachtet.
+      #
+      # Die Eintraege unten bleiben trotzdem stehen: Sie kosten nichts, sie
+      # koennten eines Tages greifen, und sie sind die lesbare Fassung der
+      # Entscheidung. Als Absicherung taugen sie nachweislich nicht.
+      #
+      # > [!important] Beim Anheben von Node mitzufuehren
+      # > Diese Grenze gehoert in denselben Commit wie `.nvmrc` und `engines`
+      # > in der package.json. Bleibt sie stehen, veraltet der Typsatz
+      # > stillschweigend; faellt sie ersatzlos weg, ist die Absicherung weg.
+      #
+      # Gegenprobe am naechsten Vorgang:
+      #   `@dependabot show @types/node ignore conditions`
+      # ─────────────────────────────────────────────────────────────────────
+      - dependency-name: "@types/node"
+        update-types: [version-update:semver-major]
+        # Laufzeit ist Node 24 (.nvmrc). Alles ab 25 beschreibt Schnittstellen,
+        # die es hier zur Laufzeit nicht gibt.
+        versions: [">=25.0.0"]
+
+  # Haelt auch die auf Commit-SHA gepinnten Actions aktuell -- ohne das waere
+  # ein Pin gleichbedeutend mit "nie wieder aktualisiert".
+  - package-ecosystem: github-actions
+    directory: "/"
+    # Wartezeit vor der Uebernahme neuer Versionen.
+    #
+    # Der haeufigste Verlauf eines Lieferkettenangriffs: Ein uebernommenes
+    # Maintainer-Konto veroeffentlicht eine schadhafte Version, die innerhalb
+    # weniger Tage auffaellt und zurueckgezogen wird. Wer sofort aktualisiert,
+    # faengt genau dieses Fenster ab. Sieben Tage ist der Wert, den Semgreps
+    # Regelsatz als Mindestmass ansetzt.
+    #
+    # Gilt NICHT fuer Sicherheitsaktualisierungen -- die erzeugt Dependabot
+    # unabhaengig davon und ohne Verzoegerung.
+    #
+    # > [!warning] Hier steht bewusst KEIN `semver-major-days`
+    # > Anders als bei npm ist die Angabe fuer `github-actions` nicht
+    # > zulaessig -- Actions werden ueber Tags bezogen, nicht ueber Semver.
+    # > Dependabot lehnt die GESAMTE Datei ab, wenn sie dennoch dasteht:
+    # >
+    # >   The property '#/updates/1/cooldown/semver-major-days' is not
+    # >   supported for the package ecosystem 'github-actions'.
+    # >
+    # > Der Fehler lag drei Wochen im Repository, ohne dass etwas rot war:
+    # > GitHub prueft die Konfiguration nur bei Aenderung und meldet den
+    # > Befund als eigene Pruefung am Pull Request. Aufgefallen ist er, als
+    # > diese Datei aus einem anderen Grund angefasst wurde.
+    # >
+    # > **Das ist zugleich die wahrscheinlichste Erklaerung fuer den Abschnitt
+    # > im npm-Block** -- „keine Regel aus dieser Datei greift hier". Eine
+    # > Datei, die beim Parsen verworfen wird, hat keine Regeln, die greifen
+    # > koennten. Belegt ist der Zusammenhang nicht; nachpruefbar wird er erst
+    # > am naechsten Dependabot-Lauf mit gueltiger Datei.
+    cooldown:
+      default-days: 7
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:00"
+      timezone: Europe/Berlin
+    commit-message:
+      prefix: "chore(ci)"

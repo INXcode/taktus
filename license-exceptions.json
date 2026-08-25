@@ -1,0 +1,25 @@
+{
+  "$hinweis": [
+    "Einzelfreigaben für Pakete, deren Lizenzangabe der automatischen Prüfung",
+    "nicht genügt — unklarer Bezeichner, veralteter Bezeichner, oder eine",
+    "Deklaration, die von den tatsächlichen Dateikopfzeilen abweicht.",
+    "",
+    "Der Schlüssel ist 'name@exakte-version', nicht nur der Paketname. Das ist",
+    "der Kern: Ein Versionssprung erzwingt eine erneute menschliche Prüfung.",
+    "Eine an den Paketnamen gebundene Ausnahme würde dauerhaft blind machen.",
+    "",
+    "Jede Freigabe braucht alle fünf Felder. Ein Eintrag ohne Beleg ist keine",
+    "Prüfung, sondern eine Umgehung — scripts/check-licenses.mjs weist ihn ab.",
+    "",
+    "Beispiel:",
+    "  \"argparse@1.0.10\": {",
+    "    \"spdx\": \"Python-2.0\",",
+    "    \"grund\": \"package.json deklariert 'Python-2.0'; die Dateikopfzeilen bestätigen die PSF-Lizenz. AGPL-3.0-verträglich.\",",
+    "    \"beleg\": \"node_modules/argparse/LICENSE\",",
+    "    \"geprueft_von\": \"kontakt@inxsystems.de\",",
+    "    \"geprueft_am\": \"2026-08-04\"",
+    "  }"
+  ],
+
+  "freigaben": {}
+}

@@ -1,0 +1,17 @@
+blank_issues_enabled: false
+
+contact_links:
+  - name: Sicherheitslücke melden
+    url: https://github.com/INXcode/taktus/security/advisories/new
+    about: >-
+      Bitte NICHT als Issue. Über diesen Weg entsteht ein nicht öffentlicher
+      Vorgang — eine öffentliche Meldung setzt alle Betreiber dem Risiko aus,
+      bevor eine Korrektur bereitsteht. Ohne GitHub-Konto: E-Mail an
+      kontakt@inxsystems.de.
+
+  - name: Datenschutzbefund melden
+    url: https://github.com/INXcode/taktus/blob/main/SECURITY.md
+    about: >-
+      Mandantentrennung, Datenminimierung, Protokollierung, Löschung —
+      derselbe Weg wie bei Sicherheitslücken. Diese Fehlerklasse findet kein
+      Scanner und ist deshalb besonders wertvoll.

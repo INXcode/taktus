@@ -1,0 +1,56 @@
+name: Änderung vorschlagen
+description: Eine Verbesserung oder Funktion zur Diskussion stellen
+labels: ["vorschlag"]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Der Funktionsumfang von Release 1 ist bewusst eng geschnitten. Die
+        Entscheidungsregel lautet: **weniger Funktionen, früher
+        veröffentlicht.** Vorschläge sind willkommen — aber Funktionen ohne
+        vorherige Abstimmung werden in der Regel abgelehnt, nicht wegen der
+        Qualität, sondern weil jede zusätzliche Funktion die Veröffentlichung
+        verzögert.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Welches Problem löst das
+      description: >-
+        Bitte das Problem beschreiben, nicht die Lösung. Was geht heute nicht
+        oder nur umständlich?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: zweck
+    attributes:
+      label: Welchem Zweck dient es
+      description: >-
+        Der Funktionsumfang ist eng geschnitten (CONTRIBUTING.md). Eine
+        ehrliche Antwort hier beschleunigt die Entscheidung.
+      options:
+        - Sicherheit, Datenschutz oder Nachweisbarkeit
+        - Qualität — Tests, Werkzeugkette, Dokumentation
+        - Behebt einen Fehler in einer bestehenden Funktion
+        - Neue Funktion
+        - Weiß nicht
+    validations:
+      required: true
+
+  - type: textarea
+    id: vorschlag
+    attributes:
+      label: Vorgeschlagene Lösung
+    validations:
+      required: false
+
+  - type: textarea
+    id: datenschutz
+    attributes:
+      label: Auswirkung auf Daten
+      description: >-
+        Braucht der Vorschlag neue personenbezogene Felder? Jedes Feld muss
+        einen begründbaren Zweck haben — Felder „für später“ gibt es nicht.
+    validations:
+      required: false

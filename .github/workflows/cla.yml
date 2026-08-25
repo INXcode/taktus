@@ -1,0 +1,158 @@
+name: CLA
+
+# Beitraege werden nur nach Zustimmung zum Contributor License Agreement
+# aufgenommen (CLA.md). Dieser Workflow prueft, ob sie vorliegt, und setzt
+# den Status `CLA` auf dem Kopf-Commit des Pull Requests. Der Status gehoert
+# in die Liste der erforderlichen Pruefungen der Branch Protection -- eine
+# Pruefung, die nicht verpflichtend ist, ist keine.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# Warum selbst gebaut
+#
+# Die verbreitete fremde Loesung (CLA Assistant Lite) ist im Maerz 2026
+# archiviert worden und erhaelt keine Sicherheitsaktualisierungen mehr. Sie
+# laeuft mit `contents: write` auf `pull_request_target` -- der Kombination,
+# die in GitHub Actions am haeufigsten angegriffen wird. In einem Repository,
+# dessen Argument die Pruefkette ist, waere sie die schwaechste Stelle.
+#
+# Dieser Workflow schreibt deshalb nichts. Kein `contents: write`, kein
+# Zweig, kein Commit aus einem fremdausgeloesten Ereignis heraus. Der Preis
+# ist, dass die Verwaltung .github/cla-signatures.json von Hand pflegt.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# Warum `pull_request_target` und nicht `pull_request`
+#
+# `pull_request` aus einem Fork erhaelt einen Token ohne Schreibrechte -- der
+# Status liesse sich damit nicht setzen, und gerade Beitraege aus Forks sind
+# der einzige Fall, fuer den es diesen Workflow gibt.
+#
+# `pull_request_target` fuehrt die Definition des Basiszweigs aus, nicht die
+# des Pull Requests. Damit kann kein Beitragender diesen Workflow durch eine
+# Aenderung an seinem eigenen Zweig veraendern. Die Bedingung dafuer, dass
+# das traegt: **fremder Code darf nicht ausgecheckt werden.** Das Auschecken
+# unten holt ausdruecklich den Standardzweig, nie `github.event.pull_request.head`.
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+  issue_comment:
+    types: [created]
+
+permissions: {}
+
+concurrency:
+  # Pro Vorgang serialisieren. Nicht abbrechen: Ein laufender Durchgang
+  # koennte gerade den Status setzen, den der naechste erwartet.
+  group: cla-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  zustimmung:
+    name: CLA-Zustimmung
+    # `issue_comment` feuert auch fuer gewoehnliche Issues. Dort gibt es
+    # keinen Pull Request und nichts zu pruefen.
+    if: >-
+      github.event_name == 'pull_request_target' ||
+      github.event.issue.pull_request != null
+    runs-on: ubuntu-latest
+
+    permissions:
+      # Ausschliesslich diese drei. Insbesondere kein `contents: write`.
+      contents: read # Basiszweig auschecken (Skripte und Bestand)
+      pull-requests: write # Anleitung als Kommentar hinterlassen
+      statuses: write # den Pflicht-Status setzen
+
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR_NUMMER: ${{ github.event.pull_request.number || github.event.issue.number }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+
+    steps:
+      # Ausdruecklich der Standardzweig, nicht der Kopf des Pull Requests.
+      # Hier liegt die Sicherheitsgrenze dieses Workflows: Wuerde stattdessen
+      # fremder Code ausgecheckt und ausgefuehrt, liefe er mit dem Token des
+      # Basisrepositories.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .nvmrc
+
+      # Die Auswertung braucht keine Abhaengigkeiten -- deshalb kein
+      # `pnpm install`. scripts/cla-signatures.mjs kommt ohne aus.
+      - name: Vorgang und Kommentare abrufen
+        run: |
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMMER}" > pr.json
+          gh api --paginate \
+            "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMMER}/comments" \
+            --slurp | jq 'add // []' > kommentare.json
+          jq -r '"Vorgang #\(.number) von \(.user.login), Kopf \(.head.sha[0:7])"' pr.json
+
+      - name: Zustimmung pruefen
+        id: pruefung
+        continue-on-error: true
+        env:
+          CLA_PR_JSON: pr.json
+          CLA_COMMENTS_JSON: kommentare.json
+          CLA_STORE: .github/cla-signatures.json
+        run: node scripts/check-cla.mjs
+
+      # Werte aus vorigen Schritten kommen ueber `env` in die Shell, nicht
+      # ueber `${{ }}` mitten im Skript. Der Unterschied ist nicht kosmetisch:
+      # Ein `${{ }}` wird vor dem Ausfuehren textuell eingesetzt, ein Wert mit
+      # Anfuehrungszeichen oder Semikolon waere damit Shell-Code. Hier stammen
+      # beide Werte aus eigenem Skript -- die Regel gilt trotzdem, weil sie
+      # sonst beim naechsten Mal nicht mehr gilt.
+      - name: Status am Kopf-Commit setzen
+        env:
+          GEZEICHNET: ${{ steps.pruefung.outputs.gezeichnet }}
+          GRUND: ${{ steps.pruefung.outputs.grund }}
+        run: |
+          set -euo pipefail
+          KOPF="$(jq -r '.head.sha' pr.json)"
+          if [ "${GEZEICHNET}" = "true" ]; then
+            ZUSTAND=success
+          else
+            ZUSTAND=failure
+          fi
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/statuses/${KOPF}" \
+            -f state="${ZUSTAND}" \
+            -f context="CLA" \
+            -f description="${GRUND}" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/blob/${DEFAULT_BRANCH}/CLA.md" \
+            > /dev/null
+          echo "Status CLA = ${ZUSTAND}"
+
+      # Nur einmal je Vorgang. Ein Bot, der bei jedem Push dieselbe Anleitung
+      # wiederholt, wird ueberlesen -- und die Anleitung ist der einzige
+      # Grund, warum dieser Job ueberhaupt Schreibrechte am Vorgang hat.
+      #
+      # Der Text steht in .github/cla-hinweis.md, nicht hier: Ein Absatz, der
+      # sich an einen Menschen richtet, gehoert in eine Datei, die man lesen
+      # und aendern kann, ohne YAML-Einrueckung zu zaehlen.
+      - name: Anleitung hinterlassen
+        if: steps.pruefung.outputs.gezeichnet != 'true'
+        run: |
+          set -euo pipefail
+          if jq -e 'any(.[]; .body | contains("<!-- cla-hinweis -->"))' kommentare.json > /dev/null; then
+            echo "Anleitung steht bereits am Vorgang."
+            exit 0
+          fi
+          AUTOR="$(jq -r '.user.login' pr.json)"
+          BASIS="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/blob/${DEFAULT_BRANCH}"
+          sed -e "s|@AUTOR|@${AUTOR}|" -e "s|BASIS|${BASIS}|g" \
+            .github/cla-hinweis.md > hinweis.md
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMMER}/comments" \
+            -F body=@hinweis.md > /dev/null
+
+      # Der Job selbst muss rot werden, sonst haengt alles am Status allein.
+      - name: Ergebnis durchreichen
+        if: steps.pruefung.outputs.gezeichnet != 'true'
+        run: |
+          echo "::error::Zustimmung zum Contributor License Agreement fehlt. Anleitung steht am Vorgang."
+          exit 1

@@ -1,0 +1,416 @@
+/* Taktus Kontor -- Token-Satz Release 1
+ *
+ * Tailwind v4 arbeitet CSS-first: Das Design-System steht hier, nicht in einer
+ * `tailwind.config`. Der Satz stammt aus den Bildschirmentwuerfen und ist
+ * gegenueber der gelieferten Fassung an drei Stellen ergaenzt -- die
+ * Ergaenzungen sind unten jeweils als solche gekennzeichnet.
+ *
+ * Farbherkunft: Violett #97005e (tragend), Orange #f47b20 (ausschliesslich
+ * KI-Kennzeichnung), Grau #939598 (Linien, nie Text) -- Neutrale davon
+ * abgeleitet Richtung #2a2b2e. Kontraste: Violett auf Weiss 9,0:1,
+ * Fliesstext #2a2b2e 12,6:1, KI-Text #8a3d05 7,1:1 (alle WCAG AA erfuellt).
+ *
+ * Dunkelmodus ist in Release 1 nicht vorgesehen; der vorbereitete Block steht
+ * am Dateiende auskommentiert, damit er nicht neu erfunden wird. Begruendung
+ * dort.
+ */
+
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+ * Schriften -- selbst ausgeliefert, kein CDN.
+ *
+ * Zwei Gruende: Die Souveraenitaetsentscheidung des Projekts schliesst
+ * US-Dienste im Betrieb aus, und die Content-Security-Policy kommt mit
+ * `font-src 'self'` aus, sobald sie scharf gestellt wird.
+ *
+ * Herkunft und Pruefsummen der Dateien stehen in docs/betrieb.md. Beide
+ * Familien stehen unter der SIL Open Font License 1.1 und sind damit mit
+ * AGPL-3.0 vereinbar; die Lizenztexte liegen daneben in public/fonts/ und
+ * werden mit ausgeliefert, wie die OFL es verlangt.
+ * ------------------------------------------------------------------------- */
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900; /* variabel -- ein Eintrag deckt alle Schnitte */
+  font-display: swap;
+  src: url("/fonts/InterVariable.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url("/fonts/JetBrainsMono[wght].woff2") format("woff2");
+}
+
+/* `static` ist hier nicht optional. Tailwind v4 entfernt sonst jeden Token,
+ * den keine erzeugte Utility-Klasse anfasst -- ein `--color-ai`, das nur in
+ * einem `style`-Attribut oder in einer noch ungeschriebenen Komponente
+ * auftaucht, waere zur Laufzeit schlicht nicht da, und der Fehler zeigt sich
+ * erst im Browser. Zwei Gruende sprechen dafuer, das abzuschalten:
+ *
+ *   1. Dieser Satz IST das Design-System. Er soll vollstaendig in den
+ *      Entwicklerwerkzeugen stehen, auch was gerade niemand benutzt.
+ *   2. Die stillen Ausfaelle traefen ausgerechnet die KI-Kennzeichnung --
+ *      also die Farbe, die eine Sicherheitsmassnahme traegt.
+ *
+ * Der Preis sind wenige Kilobyte Variablen im Stylesheet. */
+@theme static {
+  /* ---------- Flaechen und Text ---------- */
+  --color-background: #ffffff;
+  --color-subtle: #f8f9f9; /* alternierende Flaeche, Tabellenkopf */
+  --color-muted-surface: #f1f2f3; /* Segment, Skelett, inaktiver Chip */
+  --color-card: #ffffff;
+  --color-overlay: rgb(26 27 29 / 0.35);
+
+  --color-foreground: #1a1b1d; /* Ueberschriften, Zahlen */
+  --color-body: #2a2b2e; /* Fliesstext */
+  --color-muted: #5a5c60; /* Hilfstext, Sekundaerangaben */
+  --color-faint: #939598; /* Platzhalter, nie tragender Text */
+  --color-border: #e6e7e8;
+  --color-border-strong: #d3d4d6; /* Feldrahmen */
+
+  /* Ergaenzung 1 von 3: Der Entwurf verwendet diese beiden Werte durchgehend
+   * als Literale -- #3f4145 an jeder Feldbeschriftung, #b4b6b9 in jedem
+   * deaktivierten Bedienelement. Ohne Namen waeren die Komponenten voller
+   * Zahlen, die niemand mehr einer Entscheidung zuordnen kann. */
+  --color-field-label: #3f4145; /* Beschriftung ueber Eingabefeldern */
+  --color-text-disabled: #b4b6b9; /* Text in deaktivierten Bedienelementen */
+
+  /* ---------- Primaer ---------- */
+  --color-primary: #97005e;
+
+  /* Abweichung vom gelieferten Wert (#7c004d), gemessen begruendet.
+   *
+   * Der Abstand #97005e -> #7c004d betraegt dE 10,2 bei dL 6,5. Das klingt
+   * nach genug und ist es nicht: Beim Ueberfahren aendert sich am primaeren
+   * Knopf ausschliesslich die Fuellung. Die anderen drei Arten tragen jeweils
+   * einen ZWEITEN Traeger, und der macht dort die Arbeit --
+   *
+   *   Sekundaer:   Fuellung dE 2,2 (fast nichts), aber der Rahmen springt
+   *                von Grau #d3d4d6 auf Violett #97005e
+   *   Flach:       dE 10,0, aber es erscheint eine Flaeche, wo vorher keine war
+   *   Gefaehrlich: dE 92,1 -- vollstaendige Umkehr
+   *
+   * Auf einer grossen gesaettigten Flaeche ohne Kante hat das Auge nichts,
+   * woran es den Unterschied festmachen kann. #61003c verdoppelt den Abstand
+   * auf dE 20,7 bei dL 13,2 und bleibt dabei im Farbkreis der Marke.
+   *
+   * Der Entwurf sieht fuer Knoepfe keinen Gedrueckt-Zustand vor (die Spalten
+   * sind Ruhe, Ueberfahren, Fokus, Ladend, Deaktiviert), deshalb kollidiert
+   * das nicht mit --color-primary-active. */
+  --color-primary-hover: #61003c;
+  --color-primary-active: #61003c;
+  --color-primary-soft: #f9e8f1; /* Flaeche */
+  --color-primary-tint: #fdf5f9; /* eigene Zeile in Tabellen */
+  --color-primary-text: #7c004d; /* Text auf primary-soft */
+  --color-on-primary: #ffffff;
+
+  /* Ergaenzung 2 von 3: Rahmen der Rollenmarke „Verwaltung". */
+  --color-role-border: #f0c6dd;
+
+  /* ---------- Rueckmeldungen ---------- */
+  --color-destructive: #b3241b;
+  --color-destructive-text: #8f1d16;
+  --color-destructive-border: #e8b7b3;
+  --color-destructive-soft: #fdf3f2;
+  --color-success: #1c7a52;
+  --color-success-text: #17603f;
+  --color-success-soft: #eaf5ef;
+  --color-warning: #8a5a00;
+  --color-warning-text: #7a5300;
+  --color-warning-border: #e8d7ae;
+  --color-warning-soft: #fdf6e6;
+
+  /* Ergaenzung 3 von 3: Laufring des gefaehrlichen Knopfes im Ladezustand. */
+  --color-destructive-track: #f2dedc;
+
+  /* ---------- KI-Kennzeichnung: nur hier, nirgends sonst ----------
+   * Diese Farbe ist die vereinbarte Gegenmassnahme zum Risiko „Ausgabe ohne
+   * Pruefung" aus docs/security.md Kapitel G. Sie darf an keinem Status,
+   * keiner Warnung und keinem Akzent auftauchen -- sonst ist die Massnahme
+   * weg. Als Text auf Weiss tritt nie #f47b20 auf, sondern #8a3d05 (7,1:1).
+   * Schraffur der ungeprueften Flaeche:
+   * repeating-linear-gradient(135deg, #fef6f0 0 8px, #fdeade 8px 16px) */
+  --color-ai: #f47b20; /* Kante, Marke, Quadrat */
+  --color-ai-border: #fab488;
+  --color-ai-soft: #fef6f0; /* Schraffur hell */
+  --color-ai-soft-2: #fdeade; /* Schraffur dunkel */
+  --color-ai-line: #fcd4bd; /* Innenrahmen */
+  --color-ai-text: #8a3d05; /* Text auf Weiss/Schraffur */
+  --color-on-ai: #ffffff;
+
+  /* ---------- ticket_status ---------- */
+  --color-status-open: #0b5cad;
+  --color-status-open-text: #0b4d92;
+  --color-status-open-soft: #eaf2fb;
+  --color-status-progress: #97005e;
+  --color-status-progress-text: #7c004d;
+  --color-status-progress-soft: #f9e8f1;
+  --color-status-waiting: #5a5c60;
+  --color-status-waiting-text: #3f4145;
+  --color-status-waiting-soft: #f1f2f3;
+  --color-status-closed: #1c7a52;
+  --color-status-closed-text: #17603f;
+  --color-status-closed-soft: #eaf5ef;
+
+  /* ---------- ticket_category: gedeckt, ordnet ein, warnt nicht ----------
+   * Immer als 7px-Quadrat auf --color-subtle mit --color-body als Text. Die
+   * Form trennt Status und Kategorie, nicht die Farbe allein: Status ist eine
+   * farbige Pille, Kategorie ein gedecktes Quadrat auf neutraler Flaeche. */
+  --color-cat-stoerung: #a8564e;
+  --color-cat-anfrage: #4a6b8a;
+  --color-cat-wartung: #4f7358;
+  --color-cat-abrechnung: #7a6a4a;
+  --color-cat-sonstiges: #7d7d82;
+
+  /* ---------- Typografie ---------- */
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --text-xs: 12px;
+  --text-xs--line-height: 18px;
+  --text-sm: 13px;
+  --text-sm--line-height: 20px;
+  --text-base: 14px;
+  --text-base--line-height: 22px;
+  --text-md: 15px;
+  --text-md--line-height: 24px;
+  --text-lg: 16px;
+  --text-lg--line-height: 26px;
+  --text-xl: 18px;
+  --text-xl--line-height: 26px;
+  --text-2xl: 22px;
+  --text-2xl--line-height: 30px;
+  --text-3xl: 26px;
+  --text-3xl--line-height: 32px;
+  --text-4xl: 28px;
+  --text-4xl--line-height: 34px;
+  --text-5xl: 36px;
+  --text-5xl--line-height: 40px;
+
+  /* ---------- Abstand: 4px-Raster ---------- */
+  --spacing: 4px;
+
+  /* ---------- Radien ---------- */
+  --radius-sm: 6px; /* Chip, Kategorie */
+  --radius-md: 8px; /* Feld, Knopf */
+  --radius-lg: 12px; /* Karte, Tabelle */
+  --radius-xl: 16px; /* Dialog, Blatt */
+
+  /* ---------- Schatten ---------- */
+  --shadow-sm: 0 1px 2px rgb(26 27 29 / 0.06);
+  --shadow-md: 0 4px 14px rgb(26 27 29 / 0.1);
+  --shadow-lg: 0 18px 48px rgb(26 27 29 / 0.18);
+  --shadow-sheet: 0 -8px 32px rgb(26 27 29 / 0.14);
+
+  /* ---------- Fokus ----------
+   * Drei Halos, weil der Entwurf drei verlangt: Felder faerben den Rahmen und
+   * tragen den schmaleren Halo, Knoepfe den breiteren, gefaehrliche Aktionen
+   * denselben in Rot. Die Regeln dazu stehen unten in @layer base. */
+  --color-focus: #97005e;
+  --shadow-focus: 0 0 0 4px rgb(151 0 94 / 0.14); /* Feld */
+  --shadow-focus-btn: 0 0 0 5px rgb(151 0 94 / 0.18); /* Knopf */
+  --shadow-focus-danger: 0 0 0 5px rgb(179 36 27 / 0.16); /* gefaehrlich */
+
+  /* ---------- Bewegung: nur wo sie etwas erklaert ---------- */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+
+  /* ---------- Groessen ----------
+   * Achtung: Tailwind v4 erzeugt nur fuer bekannte Namensraeume Utilities
+   * (--color-*, --font-*, --text-*, --radius-*, --shadow-*, --spacing,
+   * --ease-*). Die vier hier sind gewoehnliche Custom Properties -- es gibt
+   * kein `w-size-sidebar`. Verwendung: w-[var(--size-sidebar)],
+   * min-h-[var(--size-control)]. */
+  --size-control: 40px; /* Bedienelement Desktop */
+  --size-control-mobile: 44px; /* Bedienelement Mobil, Mindestziel */
+  --size-sidebar: 248px;
+  --size-content-max: 1280px;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-background);
+    color: var(--color-body);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+    -webkit-font-smoothing: antialiased;
+    text-wrap: pretty;
+  }
+
+  h1,
+  h2,
+  h3 {
+    color: var(--color-foreground);
+    letter-spacing: -0.015em;
+  }
+
+  /* Minuten und Summen stehen untereinander. `.tabular` steht neben `table`,
+   * weil die Listen dieser Anwendung CSS-Raster sind und keine <table>. */
+  table,
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  a {
+    color: var(--color-primary);
+    text-decoration: none;
+  }
+
+  a:hover {
+    color: var(--color-primary-active);
+    text-decoration: underline;
+  }
+
+  ::selection {
+    background: var(--color-primary-soft);
+    color: var(--color-primary-active);
+  }
+
+  /* ---------- Fokus ----------
+   * Sichtbarer Fokusring, nicht verhandelbar -- eine Referenz wird an dieser
+   * Stelle geprueft. Aufteilung: `outline` traegt den festen Indikator,
+   * `box-shadow` den durchscheinenden Halo.
+   *
+   * Alle Selektoren stehen in :where(), damit ihre Spezifitaet 0 bleibt und
+   * jede Tailwind-Klasse sie ueberschreiben kann, ohne !important.
+   *
+   * `--shadow-eigen` loest ein Problem, das sonst nur im Fokuszustand
+   * auftaucht: box-shadow addiert keine Einzelwerte, ein Halo wuerde einen
+   * vorhandenen Schatten also ERSETZEN. Regel dazu: --shadow-eigen wird
+   * ausschliesslich auf dem fokussierbaren Element selbst gesetzt, nie auf
+   * einem Container -- sonst erbt ein Knopf darin den Containerschatten.
+   *
+   * ---------------------------------------------------------------------
+   * Der Trennring (`0 0 0 2px var(--color-background)`)
+   * ---------------------------------------------------------------------
+   * Ohne ihn ist der Ring auf dem primaeren Knopf kaum zu erkennen: violetter
+   * Umriss auf violetter Flaeche. Der Versatz von 2px sollte dazwischen Weiss
+   * zeigen, aber der Halo faellt in genau diese Luecke und faerbt sie
+   * hellviolett -- uebrig bleibt ein Knopf, der "ein bisschen dunkler"
+   * aussieht.
+   *
+   * WCAG 2.2, Erfolgskriterium 2.4.11 verlangt fuer den Fokusindikator 3:1
+   * gegen die ANGRENZENDE Farbe. Violett neben Violett erfuellt das nicht,
+   * gleich wie kraeftig der Ton ist -- den Ring nur abzudunkeln loest das
+   * Problem also nicht, es verschiebt es.
+   *
+   * Der Trennring legt deshalb 2px Hintergrundfarbe zwischen Flaeche und
+   * Umriss. Auf hellem Grund ist er unsichtbar, auf dem gefuellten Knopf
+   * schafft er die Kante, an der der Umriss ueberhaupt erst ablesbar wird.
+   * Der Umriss bleibt zusaetzlich stehen: Im Kontrastmodus von Windows
+   * werden Schatten verworfen, `outline` nicht -- ein Ring, der nur aus
+   * box-shadow bestuende, verschwaende dort ersatzlos.
+   *
+   * ---------------------------------------------------------------------
+   * `[data-fokus-vorschau]` -- der Ring ohne Fokus
+   * ---------------------------------------------------------------------
+   * Ausschliesslich fuer den Musterkatalog. Grund: `:focus-visible` trifft
+   * bei einem Mausklick auf einen Knopf absichtlich NICHT -- wer klickt,
+   * weiss ja, wo er ist. Der Ring ist damit im Katalog durch Anklicken nicht
+   * herbeizufuehren, und in Safari auch nicht per Tabulator, solange dort
+   * "Press Tab to highlight each item" ausgeschaltet ist (Vorgabe).
+   *
+   * Ein Musterkatalog, dessen wichtigster Zustand sich nur unter bestimmten
+   * Browsereinstellungen zeigt, prueft nichts. Die Vorschau haengt deshalb im
+   * SELBEN Selektor wie der echte Zustand -- nicht in einer nachgebauten
+   * Regel daneben. So koennen die beiden nicht auseinanderlaufen. */
+  :where(:focus-visible, [data-fokus-vorschau]) {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+    box-shadow:
+      var(--shadow-eigen, 0 0 #0000),
+      0 0 0 2px var(--color-background),
+      var(--shadow-focus-btn);
+  }
+
+  /* Felder: der Rahmen faerbt sich, der Halo ist schmaler, kein Umriss.
+   * Grund: 2px Umriss plus 2px Versatz plus 5px Halo um ein 40px hohes Feld
+   * laesst Tabellenzeilen optisch springen. Die Sichtbarkeit traegt hier der
+   * eingefaerbte Rahmen, nicht der Umriss. */
+  :where(input, textarea, select):is(:focus-visible, [data-fokus-vorschau]) {
+    outline: none;
+    border-color: var(--color-focus);
+    box-shadow: var(--shadow-eigen, 0 0 #0000), var(--shadow-focus);
+  }
+
+  /* Gefaehrliche Aktion: gleiche Geometrie, rote Farbe -- samt Trennring.
+   * Der Knopf ist in Ruhe weiss, beim Ueberfahren aber vollflaechig rot;
+   * ohne den Trennring stuende dann ein roter Umriss auf roter Flaeche. */
+  :where([data-variant="destructive"]):is(
+    :focus-visible,
+    [data-fokus-vorschau]
+  ) {
+    outline-color: var(--color-destructive);
+    box-shadow:
+      var(--shadow-eigen, 0 0 #0000),
+      0 0 0 2px var(--color-background),
+      var(--shadow-focus-danger);
+  }
+
+  /* Flacher Knopf: nur Umriss, kein Halo -- so steht er im Entwurf. */
+  :where([data-variant="ghost"]):is(:focus-visible, [data-fokus-vorschau]) {
+    box-shadow: var(--shadow-eigen, 0 0 #0000);
+  }
+
+  /* Listenzeilen: Ring nach innen, damit er das Rasterlayout nicht sprengt
+   * und innerhalb der abgerundeten Tabelle bleibt. */
+  :where([data-row]):is(:focus-visible, [data-fokus-vorschau]) {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--color-focus);
+  }
+
+  /* Bewusst nirgends im Projekt: `outline: none` ohne Ersatz. Der Umriss ist
+   * der Rueckfall, wenn eine Komponente die Regeln oben nicht mitbringt. */
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Dunkelmodus -- vorbereitet, in Release 1 nicht ausgeliefert.
+ *
+ * Das Gestaltungsbriefing (docs/design-brief.md, Kapitel 2) verlangte
+ * urspruenglich einen mitentworfenen Dunkelmodus. Die Entwuerfe haben das
+ * umgekehrt und liefern nur Hell. Das ist die spaetere und damit geltende
+ * Entscheidung; sie steht deshalb auch in der Dokumentation und nicht nur als
+ * stumm auskommentierter Block.
+ *
+ * Beim Aktivieren gilt: Orange bleibt der KI vorbehalten, die Schraffur wird
+ * zu #2a1d12 / #33220f, KI-Text zu #f9b98a. Status behaelt die Zuordnung,
+ * die Flaechen werden abgedunkelt statt aufgehellt.
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #0a0a0b;
+    --color-subtle:     #141416;
+    --color-card:       #17181a;
+    --color-foreground: #fafafa;
+    --color-body:       #e6e7e8;
+    --color-muted:      #a1a1aa;
+    --color-border:     #27272a;
+    --color-primary:      #e08fbd;
+    --color-primary-soft: #2a0f20;
+    --color-ai:           #f79452;
+    --color-ai-text:      #f9b98a;
+  }
+}
+--------------------------------------------------------------------------- */

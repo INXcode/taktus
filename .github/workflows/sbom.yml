@@ -1,0 +1,61 @@
+name: SBOM
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sbom:
+    name: SPDX-Stueckliste erzeugen
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Anhaengen an das Release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      # Ohne installierte Abhaengigkeiten haette Syft nur die Manifeste zum
+      # Lesen -- und damit genau die Selbstauskunft, die es ersetzen soll.
+      - run: pnpm install --frozen-lockfile
+
+      # Warum Syft und nicht `npm sbom`:
+      #
+      # `pnpm licenses list` (CI-Gate) liest das `license`-Feld der
+      # package.json -- eine Selbstauskunft des Paketautors. Syft scannt die
+      # tatsaechlich installierten Dateien samt Lizenztexten und
+      # Datei-Kopfzeilen. Das ist der Unterschied zwischen "was wird behauptet"
+      # und "was liegt da". Siehe docs/security.md, Kapitel D.
+      #
+      # SPDX statt CycloneDX: Beides sind Formatstandards. CycloneDX ist auf
+      # Schwachstellenverfolgung ausgerichtet, SPDX auf Lizenz-Compliance --
+      # und die AGPL-Frage ist hier die massgebliche.
+      #
+      # `npm sbom` scheidet aus, weil es das pnpm-Verzeichnislayout nicht
+      # sauber ausliest.
+      - name: Syft
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
+        with:
+          path: .
+          format: spdx-json
+          artifact-name: taktus.spdx.json
+          output-file: taktus.spdx.json
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: sbom-spdx
+          path: taktus.spdx.json
+          retention-days: 90
+
+      - name: An das Release anhaengen
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" taktus.spdx.json --clobber

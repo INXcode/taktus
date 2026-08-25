@@ -1,0 +1,37 @@
+#!/usr/bin/env sh
+
+# Geheimnis-Prüfung VOR dem Commit.
+#
+# Warum das hier nicht optional ist: GitHub Push Protection steht auf privaten
+# Repositories des Free-Plans nicht zur Verfügung (siehe
+# docs/veroeffentlichung.md). Dieser Hook ist der Ersatz — und die Phase bis zur
+# Veröffentlichung ist die riskanteste, weil noch niemand von außen hinschaut.
+#
+# Git löscht nichts: Was einmal committet wurde, bleibt in der Historie. Ein
+# Geheimnis nachträglich zu entfernen bedeutet, die Historie umzuschreiben oder
+# das Repository neu aufzusetzen. Verhindern ist ungleich billiger.
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo ""
+  echo "  FEHLER: gitleaks ist nicht installiert."
+  echo ""
+  echo "  Dieser Hook ist der Ersatz für GitHub Push Protection, die auf"
+  echo "  privaten Free-Repositories fehlt. Er wird deshalb nicht"
+  echo "  stillschweigend übersprungen."
+  echo ""
+  echo "    brew install gitleaks"
+  echo ""
+  exit 1
+fi
+
+gitleaks git --staged --redact --no-banner --config .gitleaks.toml || {
+  echo ""
+  echo "  Commit abgebrochen: mögliches Geheimnis in den vorgemerkten Änderungen."
+  echo ""
+  echo "  Falsch erkannt? Dann gehört die Ausnahme nach .gitleaks.toml —"
+  echo "  begründet und eng gefasst. Nicht mit --no-verify umgehen."
+  echo ""
+  exit 1
+}
+
+pnpm exec lint-staged

@@ -1,0 +1,110 @@
+name: Semgrep
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  semgrep:
+    name: Statische Analyse
+    # Wie in ci.yml: Minuten zaehlen nur privat. Lokal deckt `pnpm semgrep`
+    # denselben Scan ab, und `pnpm verify` ruft ihn mit auf.
+    if: ${{ !github.event.repository.private }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Zum Hochladen der Befunde ins Code Scanning.
+      security-events: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # Bewusst kein `semgrep/semgrep`-Container: Dort ist kein Node
+      # verfuegbar, der Selbsttest unten liesse sich dann nicht ausfuehren.
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.12"
+      - name: Semgrep installieren
+        run: pip install --quiet semgrep==1.172.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .nvmrc
+
+      # Laeuft ZUERST und prueft, ob die projektspezifischen Regeln ueberhaupt
+      # noch etwas finden.
+      #
+      # Beim Schreiben blieben zwei Regeln stumm, obwohl `semgrep --validate`
+      # sie fuer gueltig hielt: syntaktisch einwandfrei und trotzdem
+      # wirkungslos. Eine kaputte Regel soll den Build brechen, statt
+      # stillschweigend nichts zu melden -- sonst entsteht genau der Eindruck
+      # von Absicherung, den docs/security.md, Kapitel 0 als Zusicherung
+      # behandelt wissen will.
+      - name: Regeln loesen nachweislich aus
+        run: node scripts/check-semgrep-rules.mjs
+
+      # `--error` setzt den Exit-Code auf 1, sobald ein Befund vorliegt. Das
+      # bleibt so: Der SARIF-Upload ist eine Zweitverwertung, kein Ersatz.
+      # Ein Job, der gruen bleibt und die Befunde nur in eine Oberflaeche
+      # schreibt, wird nicht gelesen.
+      #
+      # `continue-on-error` sorgt dafuer, dass der Upload auch dann noch
+      # stattfindet, wenn der Scan abgebrochen ist -- sonst gaebe es die
+      # Befunde ausgerechnet dann nicht zu sehen, wenn es welche gibt.
+      - name: Scan
+        id: scan
+        continue-on-error: true
+        run: |
+          semgrep scan \
+            --config .semgrep/taktus.yml \
+            --config p/typescript \
+            --config p/react \
+            --config p/owasp-top-ten \
+            --config p/secrets \
+            --exclude .semgrep/probe \
+            --sarif --output semgrep.sarif \
+            --error \
+            --metrics off
+
+      # Semgrep beachtet `nosemgrep` beim Zaehlen -- ein unterdrueckter Befund
+      # macht den Lauf oben nicht rot. In die SARIF schreibt Semgrep ihn
+      # trotzdem, mit `suppressions: [{ kind: "inSource" }]`, und GitHub wertet
+      # dieses Feld nicht als Erledigung.
+      #
+      # Am 24.08.2026 standen deshalb vier offene Alerts im oeffentlichen
+      # Repository -- fuer die vier Anmelde-Actions in `src/actions/auth.ts`,
+      # die begruendungsgemaess keine Rolle pruefen koennen und ihre
+      # `nosemgrep`-Zeile samt Begruendung tragen. Ohne diesen Schritt erzeugt
+      # jede kuenftige begruendete Ausnahme einen neuen Fehlalarm.
+      - name: Unterdrueckte Befunde aus der SARIF nehmen
+        run: node scripts/sarif-ohne-unterdrueckte.mjs semgrep.sarif
+
+      # Code Scanning ist auf oeffentlichen Repositories kostenlos. Auf
+      # privaten braeuchte es das Zusatzprodukt „Code Security" -- ohne das
+      # scheitert dieser Schritt und faerbt den ganzen Job rot, obwohl der Scan
+      # sauber durchgelaufen ist.
+      #
+      # Die Bedingung haelt beide Faelle bei EINER Datei. Ein zweiter,
+      # abweichender Workflow waere die naheliegende Loesung und die
+      # schlechtere: Er muesste bei jeder Aenderung von Hand nachgezogen
+      # werden, und genau das unterbleibt irgendwann.
+      - name: Befunde ins Code Scanning laden
+        if: ${{ !github.event.repository.private }}
+        uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+
+      # Das Ergebnis des Scans entscheidet, nicht das des Uploads.
+      - name: Ergebnis durchreichen
+        if: steps.scan.outcome == 'failure'
+        run: |
+          echo "::error::Semgrep hat Befunde gemeldet. Einzelheiten im Protokoll und im Code Scanning."
+          exit 1

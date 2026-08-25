@@ -1,0 +1,106 @@
+{
+  "name": "taktus",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Schlanker Orchestrator fuer Kleinunternehmen: Tickets, Zeiterfassung, KI-Integration.",
+  "license": "AGPL-3.0-or-later",
+  "author": "INX Systems",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/INXcode/taktus.git"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "next dev -p 3100",
+    "build": "next build",
+    "start": "next start -p 3100",
+    "lint": "eslint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "db:start": "supabase start --workdir .",
+    "db:stop": "supabase stop --project-id taktus",
+    "db:status": "supabase status --workdir .",
+    "db:reset": "supabase db reset --workdir .",
+    "db:test": "supabase test db --workdir .",
+    "db:lint": "supabase db lint --workdir . --level warning",
+    "db:types": "supabase gen types typescript --local --workdir . > src/types/database.ts",
+    "licenses:check": "node scripts/check-licenses.mjs",
+    "bundle:check": "node scripts/check-client-bundle.mjs",
+    "node:check": "node scripts/check-node-major.mjs",
+    "standalone:check": "node scripts/check-standalone.mjs",
+    "public:check": "node scripts/check-public-export.mjs",
+    "verify": "node scripts/verify.mjs",
+    "semgrep": "semgrep scan --config .semgrep/taktus.yml --config p/typescript --config p/react --config p/owasp-top-ten --config p/secrets --error --exclude .semgrep/probe",
+    "semgrep:selftest": "node scripts/check-semgrep-rules.mjs",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "@supabase/ssr": "0.12.4",
+    "@supabase/supabase-js": "2.112.3",
+    "next": "16.3.1",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "0.0.1",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "21.2.2",
+    "@commitlint/config-conventional": "21.2.2",
+    "@playwright/test": "1.62.1",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "24.13.3",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.1",
+    "husky": "9.1.7",
+    "lint-staged": "17.3.0",
+    "prettier": "3.9.6",
+    "spdx-expression-parse": "5.0.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "6.0.3",
+    "vitest": "4.1.11"
+  },
+  "//versionshinweise": {
+    "typescript": "Auf 6.0.3 gepinnt, nicht 7.x. `typescript-eslint` — als Abhaengigkeit von eslint-config-next die Grundlage aller TS-Regeln — deklariert `typescript >=4.8.4 <6.1.0`. Mit TypeScript 7 verliert das Projekt das typisierte Linting.",
+    "eslint": "Auf 9.39.5 gepinnt, nicht 10.x. `eslint-plugin-react@7.37.5` (transitiv ueber eslint-config-next, neueste Version) ruft `context.getFilename()` auf, das in ESLint 10 entfernt wurde. Der Lauf bricht dann mit einem TypeError ab, statt Befunde zu melden.",
+    "pruefen": "Beide Grenzen bei jedem Major-Update von Next.js erneut pruefen. Ein Kommentar in package.json ist der einzige Ort, an dem die Begruendung nicht verlorengeht."
+  },
+  "lint-staged": {
+    "*.{ts,tsx,mjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "//kein-toml": "Prettier kennt keinen TOML-Parser. Im projektweiten Lauf faellt das nicht auf, weil unbekannte Dateitypen dort uebersprungen werden -- als expliziter Dateiname erzwingt Prettier dagegen einen Parser und bricht ab.",
+    "*.{json,md,yml,yaml,css}": [
+      "prettier --write"
+    ]
+  },
+  "$pnpm-hinweis": [
+    "Der Override haelt `nanoid` auf einer korrigierten 3er-Version.",
+    "",
+    "GHSA/High: Bei einem eigenen Generator und `size = 0` laeuft nanoid in",
+    "eine Endlosschleife. Das Paket liegt ueber postcss im Produktivbaum, also",
+    "nicht als direkte Abhaengigkeit -- postcss selbst gibt `^3.3.11` an und",
+    "bekommt ohne diesen Eintrag weiterhin 3.3.17.",
+    "",
+    "Die Obergrenze ist Absicht: `>=3.3.18` loeste auf 6.0.1 auf, eine andere",
+    "Hauptversion mit anderer Schnittstelle -- postcss erwartet die 3er-Reihe.",
+    "Der Eintrag faellt weg, sobald postcss selbst eine korrigierte Version",
+    "fordert."
+  ],
+  "pnpm": {
+    "overrides": {
+      "nanoid@<3.3.18": "^3.3.18"
+    }
+  }
+}

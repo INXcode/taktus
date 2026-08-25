@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+
+# Conventional Commits, auf Englisch. Die Historie wird öffentlich und ist Teil
+# des Eindrucks, den das Projekt hinterlässt. Regeln: CONTRIBUTING.md.
+pnpm exec commitlint --edit "$1"

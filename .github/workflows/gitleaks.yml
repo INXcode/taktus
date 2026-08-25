@@ -1,0 +1,65 @@
+name: gitleaks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    # Woechentlich. Findet Altlasten, die vor Einfuehrung des Pre-Commit-Hooks
+    # in die Historie gelangt sind.
+    - cron: "0 5 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gitleaks:
+    name: Geheimnisse in der Historie
+    # Ohne Bedingung, weil er Sekunden dauert -- aber er ist NICHT die
+    # Absicherung, auf die man sich verlaesst.
+    #
+    # Ist das Actions-Kontingent aufgebraucht, startet auch dieser Job nicht
+    # mehr: Er scheitert nach zwei Sekunden, ohne einen Schritt auszufuehren.
+    # Ein Sicherheitsnetz, das genau dann fehlt, wenn es niemand bemerkt, ist
+    # keines.
+    #
+    # Die Historienpruefung laeuft deshalb in `pnpm verify` mit, am
+    # pre-push-Hook. Dieser Job ist die Wiederholung davon, nicht das Original.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # Der Scan braucht die vollstaendige Historie. Git loescht nichts --
+          # ein Geheimnis aus einem alten Commit ist weiterhin abrufbar, auch
+          # wenn die Datei laengst geloescht wurde.
+          fetch-depth: 0
+
+      # Bewusst das Binary statt der offiziellen `gitleaks-action`: Diese ist
+      # fuer Organisations-Repositories lizenzpflichtig. Ein Lizenzhinweis, der
+      # in der CI zu einem roten Lauf fuehrt, endet erfahrungsgemaess damit,
+      # dass die Pruefung abgeschaltet wird -- genau dort, wo sie zaehlt.
+      # Das Binary selbst steht unter MIT.
+      - name: gitleaks installieren
+        env:
+          GITLEAKS_VERSION: 8.30.1
+        run: |
+          set -euo pipefail
+          curl -sSfL -o gitleaks.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          tar -xzf gitleaks.tar.gz gitleaks
+          sudo install -m 0755 gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
+      - name: Gesamte Historie pruefen
+        run: |
+          gitleaks git \
+            --log-opts="--all" \
+            --config .gitleaks.toml \
+            --redact \
+            --no-banner \
+            --exit-code 1

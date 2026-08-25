@@ -1,0 +1,83 @@
+version = 1
+SPDX-PackageName = "taktus"
+SPDX-PackageSupplier = "INX Systems <kontakt@inxsystems.de>"
+SPDX-PackageDownloadLocation = "https://github.com/INXcode/taktus"
+
+# REUSE-konforme Lizenzzuordnung.
+#
+# Statt einen Lizenzheader in jede einzelne Quelldatei zu schreiben, ordnet
+# diese Datei die Lizenz ganzen Pfadmustern zu -- das erfüllt die
+# Lizenzhinweispflicht der AGPL, ohne dass jede Migration und jede
+# Komponente einen Kommentarblock trägt.
+#
+# Die Lizenztexte selbst liegen unter LICENSES/. Das ist die REUSE-Konvention
+# und tritt neben die LICENSE-Datei im Wurzelverzeichnis, die GitHub auswertet.
+#
+# Prüfung: `pipx run reuse lint`, in der CI der Job „REUSE-Konformitaet".
+
+# Grundregel: alles.
+#
+# Bewusst `**` statt einer Aufzählung von Dateiendungen. Eine erste Fassung
+# zählte Muster wie `*.json` und `*.md` auf -- und übersah dabei acht Dateien,
+# darunter `.nvmrc`, die husky-Hooks und `.env.example`. Aufgefallen ist das
+# erst in der CI. Eine Aufzählung ist an dieser Stelle grundsätzlich die
+# schwächere Lösung: Sie versagt still bei jeder neuen Dateiart.
+[[annotations]]
+path = ["**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 INX Systems"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
+
+# Der Code of Conduct ist keine Eigenleistung, sondern der Contributor Covenant
+# 2.1. Er steht unter CC-BY-4.0 und behält deshalb seine eigene Zuordnung.
+[[annotations]]
+path = ["CODE_OF_CONDUCT.md"]
+precedence = "override"
+SPDX-FileCopyrightText = "2019 Coraline Ada Ehmke and Contributor Covenant contributors"
+SPDX-License-Identifier = "CC-BY-4.0"
+
+# Erzeugte Artefakte ohne eigene Schöpfungshöhe. Sie werden versioniert, weil
+# der Build reproduzierbar sein muss, sind aber keine urheberrechtlich
+# geschützten Beiträge dieses Projekts.
+[[annotations]]
+path = ["pnpm-lock.yaml", "src/types/database.ts"]
+precedence = "override"
+SPDX-FileCopyrightText = "NONE"
+SPDX-License-Identifier = "CC0-1.0"
+
+# Selbst ausgelieferte Schriften. Sie stehen unter der SIL Open Font License
+# 1.1 und sind keine Eigenleistung dieses Projekts -- die Grundregel oben
+# wiese ihnen sonst fälschlich AGPL-3.0 zu. Die OFL verlangt, dass der
+# Lizenztext mitgeht; er liegt deshalb zusätzlich neben den Dateien in
+# public/fonts/, wo er mit ausgeliefert wird.
+#
+# Herkunft und Prüfsummen: docs/betrieb.md, Abschnitt „Schriften".
+[[annotations]]
+path = ["public/fonts/**"]
+precedence = "override"
+SPDX-FileCopyrightText = "2016 The Inter Project Authors; 2020 The JetBrains Mono Project Authors"
+SPDX-License-Identifier = "OFL-1.1"
+
+# Absichtlich fehlerhafter Code als Nachweis, dass die Semgrep-Regeln auslösen
+# (scripts/check-semgrep-rules.mjs). Kein Projektcode, wird nie ausgeführt --
+# eine Lizenzaussage darüber wäre irreführend.
+[[annotations]]
+path = [".semgrep/probe/**"]
+precedence = "override"
+SPDX-FileCopyrightText = "NONE"
+SPDX-License-Identifier = "CC0-1.0"
+
+# Der Contributor License Agreement ist eine Bearbeitung der Fiduciary License
+# Agreement 2.0 der Free Software Foundation Europe e.V. Die Vorlage steht unter
+# CC BY-SA -- die Share-Alike-Klausel bindet die Bearbeitung an dieselbe Lizenz,
+# eine Zuordnung zu AGPL-3.0 waere hier schlicht falsch.
+#
+# Dass CC-BY-SA-4.0 in `license-policy.json` auf der Deny-Liste steht, ist kein
+# Widerspruch: Jene Liste gilt fuer Abhaengigkeiten, und
+# `scripts/check-licenses.mjs` liest ausschliesslich den pnpm-Baum. Sie sagt
+# nichts ueber die Lizenz eines Dokuments in diesem Repository.
+[[annotations]]
+path = ["CLA.md"]
+precedence = "override"
+SPDX-FileCopyrightText = "2018 Free Software Foundation Europe e.V.; 2026 INX Systems"
+SPDX-License-Identifier = "CC-BY-SA-4.0"
