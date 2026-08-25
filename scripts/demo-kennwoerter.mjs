@@ -106,7 +106,27 @@ async function main() {
 
   console.log(`Zielinstanz: ${url}\n`);
 
-  const kennwort = await frageVerdeckt("Neues Kennwort fuer alle Konten: ");
+  // `DEMO_KENNWORT` ist die zweite Wahl und bleibt es.
+  //
+  // Die verdeckte Abfrage ist der Normalfall. Es gibt aber einen Anlass, bei
+  // dem sie nicht taugt: wenn das Kennwort in einer Datei liegt, die derjenige
+  // NICHT lesen soll, der das Skript ausfuehrt. Dann laedt Node die Datei
+  // selbst und niemand bekommt den Wert zu Gesicht:
+  //
+  //     node --env-file=.env.local scripts/demo-kennwoerter.mjs
+  //
+  // Der Preis: Der Wert steht fuer die Dauer des Laufs im Prozessumfeld, wo
+  // ein anderer Nutzer derselben Maschine ihn lesen kann. Vertretbar fuer
+  // einen einzelnen Lauf auf dem eigenen Rechner -- kein Grund, die Abfrage
+  // dauerhaft zu ersetzen.
+  const ausUmgebung = process.env.DEMO_KENNWORT;
+
+  if (ausUmgebung) {
+    console.log("Kennwort aus DEMO_KENNWORT uebernommen, nicht abgefragt.\n");
+  }
+
+  const kennwort =
+    ausUmgebung ?? (await frageVerdeckt("Neues Kennwort fuer alle Konten: "));
   const fehler = pruefeKennwort(kennwort);
 
   if (fehler.length > 0) {
