@@ -64,3 +64,6 @@ blob-report/
 # Bezugsquelle bleibt das Design-Projekt; die Datei liegt lokal unter
 # docs/design/ und wird von Prettier nicht angefasst (.prettierignore).
 docs/design/
+
+# Interne Arbeitsnotizen. Nicht versioniert.
+docs/intern/
