@@ -16,7 +16,13 @@
 # vorkompilierten Binaerdateien einiger Abhaengigkeiten setzen glibc
 # voraus. Der Groessenvorteil von Alpine ist den Klassen von Fehlern
 # nicht wert, die erst zur Laufzeit auftreten.
-FROM node:24-bookworm-slim AS base
+#
+# Die Version steht genau da, nicht nur die Hauptversion. Ein Tag wie
+# `node:24-bookworm-slim` laedt Docker beim Bauen nicht neu, solange eine
+# aeltere Kopie auf dem Server liegt; ein Sicherheitsrelease kaeme so nie
+# an. Mit fester Nummer holt jeder Build genau diesen Stand. Angehoben
+# wird in beiden `FROM`-Zeilen (wie in taktus-x).
+FROM node:24.22.3-bookworm-slim AS base
 # Corepack liest die Version aus `packageManager` in package.json und
 # benutzt genau sie. Ein global installiertes pnpm waere eine zweite,
 # stillschweigend abweichende Quelle.
@@ -84,7 +90,7 @@ RUN pnpm build
 
 
 # ---------- Laufzeit ----------
-FROM node:24-bookworm-slim AS runner
+FROM node:24.22.3-bookworm-slim AS runner
 WORKDIR /app
 
 # > [!warning] Die `NEXT_PUBLIC_`-Werte werden **zusaetzlich zur Laufzeit**
