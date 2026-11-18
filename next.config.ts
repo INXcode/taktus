@@ -103,6 +103,31 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
 
   /**
+   * Schaltet den Bildoptimierer ab, also den Endpunkt `/_next/image`.
+   *
+   * Taktus nutzt ihn nicht: kein `next/image` in `src/`, und `sharp` ist
+   * nicht installiert (`pnpm-workspace.yaml`). Ohne diesen Schalter antwortet
+   * der Endpunkt trotzdem, ohne Anmeldung, und liefert jede Bilddatei erneut
+   * aus. Er ist dann Angriffsflaeche fuer eine Faehigkeit, die niemand
+   * aufruft, und genau in diesem Teil von Next tauchen wiederholt Luecken
+   * auf.
+   *
+   * Mit `unoptimized: true` beantwortet Next die Route selbst mit 404
+   * (`handleNextImageRequest` in `next/dist/server/next-server.js`).
+   *
+   * Bewusst hier und nicht in `src/proxy.ts`: Der Schalter ist Nexts eigener
+   * Weg, und er haengt nicht an einem Pfadvergleich, den ein spaeterer Umbau
+   * des Matchers lautlos aushebeln koennte.
+   *
+   * Fuer die Lizenzfrage reicht der Schalter dagegen nicht. Er entfernt
+   * `sharp` nicht aus dem Abhaengigkeitsbaum, das erledigt
+   * `pnpm-workspace.yaml`. Beide Massnahmen ergaenzen sich.
+   *
+   * Gegenprobe: `e2e/bildoptimierer.spec.ts`.
+   */
+  images: { unoptimized: true },
+
+  /**
    * AGPL Paragraph 13: Wer ueber das Netzwerk mit der Anwendung interagiert,
    * muss den Quelltext angeboten bekommen. Diese Werte speisen den
    * Quellcode-Hinweis in der Oberflaeche -- Repository-Link zusammen mit

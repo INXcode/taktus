@@ -26,13 +26,14 @@ ignoredBuiltDependencies:
 # dokumentieren, und das bei jedem Release erneut.
 #
 # Diese Anwendung nutzt keine Bildoptimierung: kein `next/image` in `src/`,
-# kein `images`-Abschnitt in `next.config.ts`. Die Auflage waere also fuer eine
-# Faehigkeit zu tragen, die niemand aufruft.
+# und `next.config.ts` schaltet den Endpunkt mit `images: { unoptimized: true }`
+# ab. Die Auflage waere also fuer eine Faehigkeit zu tragen, die niemand
+# aufruft.
 #
-# `images: { unoptimized: true }` genuegt dafuer NICHT. Der Schalter hindert
-# Next daran, `sharp` zu benutzen -- er entfernt es nicht aus dem
-# Abhaengigkeitsbaum. Fuer die Lizenzfrage zaehlt, was ausgeliefert wird:
-# `node_modules` im Containerabbild, nicht die Laufzeitkonfiguration.
+# Der Schalter allein genuegt dafuer NICHT. Er hindert Next daran, `sharp` zu
+# benutzen -- er entfernt es nicht aus dem Abhaengigkeitsbaum. Fuer die
+# Lizenzfrage zaehlt, was ausgeliefert wird: `node_modules` im Containerabbild,
+# nicht die Laufzeitkonfiguration.
 #
 # Wirkung, gemessen: 76 -> 68 Produktivpakete, 92 -> 0 `@img/`-Eintraege im
 # Lockfile, 18 MB weniger in `node_modules`. Build, Tests, Lizenzpruefung und
