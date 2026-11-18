@@ -102,6 +102,16 @@ const nextConfig: NextConfig = {
   // Verraet die eingesetzte Technologie nicht im Antwort-Header.
   poweredByHeader: false,
 
+  // Seit 16.4 legt `next dev` eine `AGENTS.md` an, sobald es einen
+  // KI-Agenten in der Umgebung erkennt -- unaufgefordert, bei jedem Start,
+  // auch wenn Playwright den Entwicklungsserver hochfaehrt. Das Repository
+  // fuehrt bewusst keine Anweisungsdatei fuer Agenten; die Datei stuende
+  // sonst nach jedem Lauf unversioniert im Arbeitsbaum und wanderte mit dem
+  // naechsten `git add .` ungeprueft ins oeffentliche Repository. Mit `false`
+  // entfernt der naechste `next dev` eine bereits erzeugte Datei auch wieder.
+  // Gleiche Loesung wie in TaktusX (dort #92).
+  agentRules: false,
+
   /**
    * Schaltet den Bildoptimierer ab, also den Endpunkt `/_next/image`.
    *
